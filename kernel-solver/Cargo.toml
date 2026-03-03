@@ -1,0 +1,13 @@
+[package]
+name = "kernel-solver"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kernel-types = { path = "../kernel-types" }
+kernel-ledger = { path = "../kernel-ledger" }
+kernel-instruments = { path = "../kernel-instruments" }
+kernel-contracts = { path = "../kernel-contracts" }
+blake3 = { workspace = true }
+serde = { workspace = true }
+ciborium = { workspace = true }

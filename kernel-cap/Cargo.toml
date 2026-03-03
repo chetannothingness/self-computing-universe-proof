@@ -1,0 +1,12 @@
+[package]
+name = "kernel-cap"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kernel-types = { path = "../kernel-types" }
+kernel-ledger = { path = "../kernel-ledger" }
+blake3 = { workspace = true }
+serde = { workspace = true }
+ed25519-dalek = { workspace = true }
+rand = { workspace = true }

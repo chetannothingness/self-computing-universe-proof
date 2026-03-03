@@ -1,0 +1,9 @@
+[package]
+name = "kernel-types"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+blake3 = { workspace = true }
+serde = { workspace = true }
+ciborium = { workspace = true }

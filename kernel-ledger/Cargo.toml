@@ -1,0 +1,9 @@
+[package]
+name = "kernel-ledger"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kernel-types = { path = "../kernel-types" }
+blake3 = { workspace = true }
+serde = { workspace = true }
