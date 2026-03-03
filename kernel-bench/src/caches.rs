@@ -1,5 +1,4 @@
-use kernel_types::{Hash32, SerPi, hash};
-use kernel_types::serpi::canonical_cbor_bytes;
+use kernel_types::{Hash32, hash};
 use std::collections::BTreeMap;
 
 /// Monotone cache trait: append-only, hash-chained, Pi-canonical.
@@ -25,6 +24,7 @@ pub trait MonotoneCache: Send + Sync {
 pub struct GenericCache {
     entries: BTreeMap<Vec<u8>, Vec<u8>>,
     head: Hash32,
+    #[allow(dead_code)]
     name: String,
 }
 

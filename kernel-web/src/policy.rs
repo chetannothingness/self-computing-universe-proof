@@ -1,6 +1,8 @@
 use kernel_types::Hash32;
 use kernel_types::hash::H;
-use kernel_types::provenance::{WebRequest, WebProvenance, HttpMethod, RetrievalPolicy};
+use kernel_types::provenance::{WebRequest, WebProvenance, HttpMethod};
+#[cfg(test)]
+use kernel_types::provenance::RetrievalPolicy;
 use kernel_types::HASH_ZERO;
 use serde::{Serialize, Deserialize};
 

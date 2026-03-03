@@ -1,4 +1,4 @@
-use kernel_types::{Hash32, SerPi, hash};
+use kernel_types::{Hash32, SerPi};
 use kernel_ledger::Event;
 use crate::state::{State, StateDelta};
 use crate::budget::Budget;

@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use kernel_types::{Hash32, HASH_ZERO, SerPi, hash};
+use kernel_types::hash;
 use kernel_types::receipt::SolveOutput;
 use kernel_contracts::compiler::compile_contract;
 use kernel_solver::Solver;

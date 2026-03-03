@@ -1,10 +1,8 @@
-use kernel_types::{Hash32, HASH_ZERO, SerPi, hash};
-use kernel_types::serpi::canonical_cbor_bytes;
+use kernel_types::{Hash32, hash};
 use kernel_types::receipt::SolveOutput;
-use kernel_types::status::Status;
 use kernel_contracts::contract::Contract;
 use kernel_solver::Solver;
-use crate::self_model::{SelfModel, VerifyResult, MismatchKind};
+use crate::self_model::{SelfModel, VerifyResult};
 
 /// The self-recognition suite.
 ///
@@ -77,7 +75,7 @@ impl SelfRecognition {
         let mut all_match = true;
         let mut mismatches = Vec::new();
 
-        for (i, contract) in contracts.iter().enumerate() {
+        for (_i, contract) in contracts.iter().enumerate() {
             let mut solver = Solver::new();
             let initial_head = solver.ledger.head();
             let output = solver.solve(contract);

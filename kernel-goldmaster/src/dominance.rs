@@ -1,5 +1,4 @@
-use kernel_types::{Hash32, SerPi, hash};
-use kernel_types::serpi::canonical_cbor_bytes;
+use kernel_types::{Hash32, hash};
 use kernel_contracts::contract::Contract;
 use kernel_contracts::compiler::compile_contract;
 

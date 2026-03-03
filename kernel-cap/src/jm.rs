@@ -1,4 +1,4 @@
-use kernel_types::{Hash32, SerPi, hash};
+use kernel_types::{SerPi, hash};
 use kernel_ledger::{Ledger, Event, EventKind};
 use crate::artifact::KernelArtifact;
 use crate::capability::Capability;

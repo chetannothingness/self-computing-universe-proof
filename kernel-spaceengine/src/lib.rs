@@ -5,6 +5,13 @@ pub mod scenario;
 pub mod verifier;
 pub mod manifest;
 
+// Part A2: L2 witness-content and L3 atlas layers
+pub mod witness_types;
+pub mod atlas_types;
+pub mod witness_encoder;
+pub mod atlas_builder;
+pub mod enhanced_emitter;
+
 // Part B: Real-universe exoplanet autopatch
 pub mod exo_types;
 pub mod exo_normalizer;

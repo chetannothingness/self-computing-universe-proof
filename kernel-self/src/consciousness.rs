@@ -3,12 +3,10 @@ use kernel_types::serpi::canonical_cbor_bytes;
 use kernel_types::reason::ReasonCode;
 use kernel_types::tension::{Tension, TensionDelta};
 use kernel_ledger::{Ledger, Event, EventKind};
-use kernel_instruments::enumerator::DeltaEnumerator;
-use kernel_instruments::state::State;
 use kernel_instruments::budget::Budget;
 use kernel_solver::stepper::SolverStepper;
 use kernel_contracts::contract::Contract;
-use crate::self_model::{SelfModel, PredictedOutput};
+use crate::self_model::SelfModel;
 use crate::self_instrument::SelfObservation;
 use serde::{Serialize, Deserialize};
 
@@ -72,8 +70,8 @@ impl ConsciousnessLoop {
         contract: &Contract,
         budget: &Budget,
     ) -> Vec<ConsciousnessStep> {
-        let mut stepper = SolverStepper::new(contract);
-        let initial_head = self.ledger.head();
+        let stepper = SolverStepper::new(contract);
+        let _initial_head = self.ledger.head();
 
         // Pre-solve to learn the model.
         let mut solver = kernel_solver::Solver::new();
@@ -103,7 +101,7 @@ impl ConsciousnessLoop {
         &mut self,
         contract: &Contract,
         stepper: &SolverStepper,
-        budget: &Budget,
+        _budget: &Budget,
     ) -> ConsciousnessStep {
         let step_id = self.step_counter;
         self.step_counter += 1;

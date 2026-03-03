@@ -1,8 +1,8 @@
-use kernel_types::{Hash32, HASH_ZERO, SerPi, hash};
+use kernel_types::{Hash32, SerPi};
+#[cfg(test)]
+use kernel_types::hash;
 use kernel_types::serpi::canonical_cbor_bytes;
 use serde::{Serialize, Deserialize};
-use std::collections::BTreeMap;
-use std::fmt;
 
 /// Rational number: num/den. Denominator always > 0. Reduced by GCD.
 /// NO FLOATS — all coordinates and physical parameters use integer or rational arithmetic.

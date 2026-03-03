@@ -1,9 +1,7 @@
-use kernel_types::{Hash32, SerPi, hash};
+use kernel_types::Hash32;
 use kernel_types::receipt::SolveOutput;
-use kernel_contracts::contract::Contract;
 use kernel_solver::Solver;
 use crate::suites::Task;
-use crate::judge::{JudgeResult, JudgeVerdict};
 use serde::{Serialize, Deserialize};
 
 /// Output from running the kernel on a task.

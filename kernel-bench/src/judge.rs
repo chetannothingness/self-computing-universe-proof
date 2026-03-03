@@ -1,7 +1,6 @@
 use kernel_types::{Hash32, SerPi, hash};
 use kernel_types::serpi::canonical_cbor_bytes;
 use kernel_types::status::Status;
-use kernel_types::receipt::SolveOutput;
 use kernel_ledger::{Event, EventKind};
 use crate::harness::{TaskOutput, AgentOutput};
 use crate::suites::Task;
@@ -44,7 +43,7 @@ impl SerPi for JudgeResult {
 pub fn judge_kernel(task: &Task, output: &TaskOutput) -> JudgeResult {
     let status = &output.solve_output.status;
     let has_answer = !output.solve_output.payload.answer.is_empty();
-    let has_receipt = output.solve_output.receipt.trace_head != kernel_types::HASH_ZERO
+    let _has_receipt = output.solve_output.receipt.trace_head != kernel_types::HASH_ZERO
         || !output.solve_output.receipt.branchpoints.is_empty();
 
     let (verdict, reason) = if *status == Status::Unique && has_answer {

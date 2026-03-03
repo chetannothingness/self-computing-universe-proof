@@ -61,6 +61,12 @@ pub enum EventKind {
     ExoplanetCatalogEmit,
     /// Q_SE_WITNESS_VERIFY checked.
     ExoplanetWitnessVerify,
+    /// L2 witness content encoded (moons, clusters, planets, lensing proxies).
+    WitnessEncode,
+    /// L3 atlas structure built (domain galaxies, filaments, frontiers).
+    AtlasBuild,
+    /// Enhanced verification completed (L0-L3 full stack).
+    EnhancedVerify,
 }
 
 impl SerPi for EventKind {
@@ -94,6 +100,9 @@ impl SerPi for EventKind {
             EventKind::ExoplanetNormalize => 25,
             EventKind::ExoplanetCatalogEmit => 26,
             EventKind::ExoplanetWitnessVerify => 27,
+            EventKind::WitnessEncode => 28,
+            EventKind::AtlasBuild => 29,
+            EventKind::EnhancedVerify => 30,
         };
         canonical_cbor_bytes(&tag)
     }

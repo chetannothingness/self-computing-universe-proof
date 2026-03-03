@@ -363,7 +363,7 @@ fn derive_p_vs_np(formal_system: &str) -> CompletionRequirements {
     }
 }
 
-fn derive_riemann_hypothesis(formal_system: &str) -> CompletionRequirements {
+fn derive_riemann_hypothesis(_formal_system: &str) -> CompletionRequirements {
     CompletionRequirements {
         missing_instruments: vec![
             MissingInstrument {
@@ -427,7 +427,7 @@ fn derive_riemann_hypothesis(formal_system: &str) -> CompletionRequirements {
     }
 }
 
-fn derive_navier_stokes(formal_system: &str) -> CompletionRequirements {
+fn derive_navier_stokes(_formal_system: &str) -> CompletionRequirements {
     CompletionRequirements {
         missing_instruments: vec![
             MissingInstrument {
@@ -489,7 +489,7 @@ fn derive_navier_stokes(formal_system: &str) -> CompletionRequirements {
     }
 }
 
-fn derive_yang_mills(formal_system: &str) -> CompletionRequirements {
+fn derive_yang_mills(_formal_system: &str) -> CompletionRequirements {
     CompletionRequirements {
         missing_instruments: vec![
             MissingInstrument {
@@ -550,7 +550,7 @@ fn derive_yang_mills(formal_system: &str) -> CompletionRequirements {
     }
 }
 
-fn derive_hodge(formal_system: &str) -> CompletionRequirements {
+fn derive_hodge(_formal_system: &str) -> CompletionRequirements {
     CompletionRequirements {
         missing_instruments: vec![
             MissingInstrument {
@@ -611,7 +611,7 @@ fn derive_hodge(formal_system: &str) -> CompletionRequirements {
     }
 }
 
-fn derive_bsd(formal_system: &str) -> CompletionRequirements {
+fn derive_bsd(_formal_system: &str) -> CompletionRequirements {
     CompletionRequirements {
         missing_instruments: vec![
             MissingInstrument {
@@ -674,7 +674,7 @@ fn derive_bsd(formal_system: &str) -> CompletionRequirements {
     }
 }
 
-fn derive_goldbach(formal_system: &str) -> CompletionRequirements {
+fn derive_goldbach(_formal_system: &str) -> CompletionRequirements {
     CompletionRequirements {
         missing_instruments: vec![
             MissingInstrument {
@@ -720,7 +720,7 @@ fn derive_goldbach(formal_system: &str) -> CompletionRequirements {
     }
 }
 
-fn derive_collatz(formal_system: &str) -> CompletionRequirements {
+fn derive_collatz(_formal_system: &str) -> CompletionRequirements {
     CompletionRequirements {
         missing_instruments: vec![
             MissingInstrument {
@@ -776,7 +776,7 @@ fn derive_collatz(formal_system: &str) -> CompletionRequirements {
     }
 }
 
-fn derive_twin_primes(formal_system: &str) -> CompletionRequirements {
+fn derive_twin_primes(_formal_system: &str) -> CompletionRequirements {
     CompletionRequirements {
         missing_instruments: vec![
             MissingInstrument {
@@ -823,7 +823,7 @@ fn derive_twin_primes(formal_system: &str) -> CompletionRequirements {
     }
 }
 
-fn derive_flt(formal_system: &str) -> CompletionRequirements {
+fn derive_flt(_formal_system: &str) -> CompletionRequirements {
     CompletionRequirements {
         missing_instruments: vec![
             MissingInstrument {

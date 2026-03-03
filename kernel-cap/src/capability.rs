@@ -1,4 +1,4 @@
-use kernel_types::{Hash32, SerPi, hash};
+use kernel_types::{Hash32, SerPi};
 use kernel_types::serpi::canonical_cbor_bytes;
 use serde::{Serialize, Deserialize};
 

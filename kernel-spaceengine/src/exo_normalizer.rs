@@ -150,7 +150,6 @@ impl ExoNormalizer {
         // Priority 1: Gaia DR3 ID (NASA formats as raw number or "Gaia DR3 <id>")
         if let Some(ref gaia_str) = record.gaia_dr3_id {
             let id_str = gaia_str.trim()
-                .trim_start_matches("Gaia DR3 ")
                 .trim_start_matches("Gaia DR3 ");
             if let Ok(id) = id_str.parse::<u64>() {
                 if id > 0 {

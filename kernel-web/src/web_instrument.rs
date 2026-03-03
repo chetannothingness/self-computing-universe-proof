@@ -1,6 +1,5 @@
 use kernel_types::{Hash32, SerPi, hash};
 use kernel_types::provenance::{WebRequest, HttpMethod, WebSelector, RetrievalPolicy};
-use kernel_types::serpi::canonical_cbor_bytes;
 use kernel_ledger::{Event, EventKind};
 use kernel_instruments::instrument::{Instrument, InstrumentResult, InstrumentOutcome};
 use kernel_instruments::state::{State, StateDelta};

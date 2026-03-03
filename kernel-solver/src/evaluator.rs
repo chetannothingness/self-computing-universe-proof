@@ -1,5 +1,4 @@
 use kernel_contracts::contract::EvalSpec;
-use kernel_types::serpi::canonical_cbor_bytes;
 
 /// Evaluate a candidate against an EvalSpec.
 /// Returns true if the candidate satisfies the contract.

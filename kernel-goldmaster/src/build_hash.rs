@@ -1,6 +1,5 @@
 use kernel_types::{Hash32, SerPi, hash};
 use kernel_types::receipt::SolveOutput;
-use kernel_contracts::contract::Contract;
 use kernel_solver::Solver;
 use crate::suite::GoldMasterSuite;
 
@@ -26,7 +25,7 @@ pub fn compute_build_hash(suite: &GoldMasterSuite) -> (Hash32, Vec<SolveOutput>)
 
 /// Verify that a build hash matches the expected outputs.
 pub fn verify_build_hash(suite: &GoldMasterSuite, expected_build_hash: &Hash32) -> BuildHashVerification {
-    let (actual_hash, outputs) = compute_build_hash(suite);
+    let (actual_hash, _outputs) = compute_build_hash(suite);
 
     if actual_hash == *expected_build_hash {
         BuildHashVerification::Match {
@@ -36,7 +35,7 @@ pub fn verify_build_hash(suite: &GoldMasterSuite, expected_build_hash: &Hash32) 
     } else {
         // Find first divergence by re-running individually.
         let mut first_mismatch = None;
-        let mut solver_check = Solver::new();
+        let _solver_check = Solver::new();
         for (i, contract) in suite.contracts.iter().enumerate() {
             let mut s1 = Solver::new();
             let mut s2 = Solver::new();

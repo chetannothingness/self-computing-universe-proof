@@ -1,8 +1,10 @@
-use kernel_types::{Hash32, HASH_ZERO, SerPi, hash};
+use kernel_types::{Hash32, HASH_ZERO, hash};
 use kernel_types::serpi::canonical_cbor_bytes;
 use kernel_contracts::contract::{Contract, EvalSpec};
 use kernel_ledger::{Event, EventKind, Ledger};
 use crate::scenario::ScenarioScript;
+use crate::atlas_types::WitnessIndexEntry;
+use crate::manifest::AddonManifest;
 use std::collections::BTreeMap;
 
 /// Verification verdict.
@@ -20,6 +22,16 @@ pub struct VerificationResult {
     pub scenario_hash_check: bool,
     pub build_hash_check: bool,
     pub witness_hash: Hash32,
+}
+
+/// Result of enhanced L0-L3 verification.
+#[derive(Debug, Clone)]
+pub struct EnhancedVerificationResult {
+    pub file_count_check: bool,
+    pub witness_index_check: bool,
+    pub dark_object_count: usize,
+    pub lensing_proxy_check: bool,
+    pub minimal_failing_witness: Option<String>,
 }
 
 /// Verifies SpaceEngine addon integrity against kernel state.
@@ -96,6 +108,60 @@ impl SpaceEngineVerifier {
         }
     }
 
+    /// Enhanced verification: checks L0-L3 full stack integrity.
+    pub fn verify_enhanced(
+        sc_files: &BTreeMap<String, Vec<u8>>,
+        manifest: &AddonManifest,
+        witness_index: &[WitnessIndexEntry],
+        ledger: &mut Ledger,
+    ) -> EnhancedVerificationResult {
+        // File count check: every file in witness_index must exist in sc_files
+        let mut file_count_ok = true;
+        let mut missing_file = None;
+        for entry in witness_index {
+            for path in &entry.file_paths {
+                if !sc_files.contains_key(path) {
+                    file_count_ok = false;
+                    if missing_file.is_none() {
+                        missing_file = Some(path.clone());
+                    }
+                }
+            }
+        }
+
+        // Witness index check: all QIDs in index have non-empty object names
+        let witness_index_ok = witness_index.iter().all(|e| !e.object_names.is_empty());
+
+        // Dark object count from manifest
+        let dark_object_count = manifest.dark_object_count;
+
+        // Lensing proxy check: lensing_proxy_count >= dark_object_count (one proxy per dark object)
+        let lensing_proxy_ok = manifest.lensing_proxy_count >= dark_object_count;
+
+        // Emit ledger event
+        let payload = canonical_cbor_bytes(&(
+            file_count_ok,
+            witness_index_ok,
+            dark_object_count as u64,
+            lensing_proxy_ok,
+        ));
+        ledger.commit(Event::new(
+            EventKind::EnhancedVerify,
+            &payload,
+            vec![],
+            1,
+            1,
+        ));
+
+        EnhancedVerificationResult {
+            file_count_check: file_count_ok,
+            witness_index_check: witness_index_ok,
+            dark_object_count,
+            lensing_proxy_check: lensing_proxy_ok,
+            minimal_failing_witness: missing_file,
+        }
+    }
+
     /// Compute the Merkle root of catalog files (sorted by filename for determinism).
     pub fn compute_catalog_merkle_root(sc_files: &BTreeMap<String, Vec<u8>>) -> Hash32 {
         let file_hashes: Vec<Hash32> = sc_files.iter()
@@ -142,7 +208,7 @@ mod tests {
         // We need to pass the raw bytes, not hex.
         // Actually the compile_space_engine reads as string bytes. So the catalog_hash
         // stored in EvalSpec is the hex string bytes. Let's match that.
-        let contract = compile_contract(&json).unwrap();
+        let _contract = compile_contract(&json).unwrap();
         // The contract stores catalog_hash as the hex string bytes.
         // verify() compares expected == actual_merkle.to_vec() — these won't match
         // because one is hex string bytes and the other is raw 32 bytes.
@@ -206,5 +272,65 @@ mod tests {
             SpaceEngineVerifier::compute_catalog_merkle_root(&files1),
             SpaceEngineVerifier::compute_catalog_merkle_root(&files2),
         );
+    }
+
+    #[test]
+    fn enhanced_verify_pass() {
+        let mut sc_files = BTreeMap::new();
+        sc_files.insert("catalogs/galaxies/KG-abcd1234.sc".into(), b"Galaxy {}".to_vec());
+        let manifest = crate::manifest::ManifestGenerator::build_manifest(
+            "1.0", HASH_ZERO, HASH_ZERO, HASH_ZERO, 0, 1, 0, 1, 0,
+        );
+        let manifest = crate::manifest::ManifestGenerator::build_enhanced_manifest(
+            manifest, 0, 0, 0, 1, 0, 0, HASH_ZERO,
+        );
+        let witness_index = vec![WitnessIndexEntry {
+            qid_hex: "abcd1234".into(),
+            object_names: vec!["KG-abcd1234".into()],
+            file_paths: vec!["catalogs/galaxies/KG-abcd1234.sc".into()],
+            witness_hash: "deadbeef".into(),
+            domain: "SAT".into(),
+        }];
+        let mut ledger = Ledger::new();
+        let result = SpaceEngineVerifier::verify_enhanced(&sc_files, &manifest, &witness_index, &mut ledger);
+        assert!(result.file_count_check);
+        assert!(result.witness_index_check);
+        assert!(result.lensing_proxy_check);
+        assert!(result.minimal_failing_witness.is_none());
+    }
+
+    #[test]
+    fn enhanced_verify_fail_missing_file() {
+        let sc_files = BTreeMap::new(); // empty — file referenced in index is missing
+        let manifest = crate::manifest::ManifestGenerator::build_manifest(
+            "1.0", HASH_ZERO, HASH_ZERO, HASH_ZERO, 0, 0, 0, 0, 0,
+        );
+        let witness_index = vec![WitnessIndexEntry {
+            qid_hex: "abcd1234".into(),
+            object_names: vec!["KG-abcd1234".into()],
+            file_paths: vec!["catalogs/galaxies/KG-abcd1234.sc".into()],
+            witness_hash: "deadbeef".into(),
+            domain: "SAT".into(),
+        }];
+        let mut ledger = Ledger::new();
+        let result = SpaceEngineVerifier::verify_enhanced(&sc_files, &manifest, &witness_index, &mut ledger);
+        assert!(!result.file_count_check);
+        assert_eq!(result.minimal_failing_witness, Some("catalogs/galaxies/KG-abcd1234.sc".into()));
+    }
+
+    #[test]
+    fn enhanced_verify_dark_object_count() {
+        let sc_files = BTreeMap::new();
+        let manifest = crate::manifest::ManifestGenerator::build_manifest(
+            "1.0", HASH_ZERO, HASH_ZERO, HASH_ZERO, 0, 0, 0, 3, 0,
+        );
+        let manifest = crate::manifest::ManifestGenerator::build_enhanced_manifest(
+            manifest, 0, 0, 0, 3, 0, 0, HASH_ZERO,
+        );
+        let witness_index = vec![];
+        let mut ledger = Ledger::new();
+        let result = SpaceEngineVerifier::verify_enhanced(&sc_files, &manifest, &witness_index, &mut ledger);
+        assert_eq!(result.dark_object_count, 3);
+        assert!(result.lensing_proxy_check); // 3 >= 3
     }
 }

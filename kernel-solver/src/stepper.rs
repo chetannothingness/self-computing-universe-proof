@@ -1,15 +1,13 @@
 use kernel_types::{Hash32, HASH_ZERO, SerPi, hash};
 use kernel_types::status::Status;
-use kernel_types::receipt::{Receipt, Payload, SolveOutput, CompletionProof};
-use kernel_ledger::{Ledger, Event, EventKind};
-use kernel_instruments::instrument::InstrumentResult;
+use kernel_types::receipt::{Receipt, Payload, SolveOutput};
+use kernel_ledger::Ledger;
 use kernel_instruments::state::State;
 use kernel_instruments::budget::Budget;
 use kernel_instruments::enumerator::DeltaEnumerator;
 use kernel_contracts::contract::Contract;
 use kernel_contracts::quotient::AnswerQuotient;
 use crate::evaluator;
-use crate::completion::{self, CompletionResult};
 
 /// Step result from one iteration of the solver.
 #[derive(Debug)]

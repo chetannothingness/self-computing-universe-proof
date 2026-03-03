@@ -1,4 +1,6 @@
-use kernel_types::{Hash32, HASH_ZERO, SerPi};
+use kernel_types::{Hash32, SerPi};
+#[cfg(test)]
+use kernel_types::HASH_ZERO;
 use kernel_types::serpi::canonical_cbor_bytes;
 use serde::{Serialize, Deserialize};
 use std::collections::BTreeMap;

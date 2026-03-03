@@ -1,8 +1,7 @@
-use kernel_types::{Hash32, HASH_ZERO, SerPi, hash};
+use kernel_types::{Hash32, SerPi, hash};
 use kernel_types::serpi::canonical_cbor_bytes;
 use kernel_types::receipt::SolveOutput;
 use kernel_contracts::contract::Contract;
-use kernel_solver::Solver;
 use std::collections::BTreeMap;
 
 /// The self-model predictor M.

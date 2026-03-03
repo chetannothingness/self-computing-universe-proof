@@ -1,4 +1,6 @@
-use kernel_types::{Hash32, HASH_ZERO, SerPi, hash};
+use kernel_types::{Hash32, SerPi, hash};
+#[cfg(test)]
+use kernel_types::HASH_ZERO;
 use kernel_types::serpi::canonical_cbor_bytes;
 use kernel_ledger::{Event, EventKind, Ledger};
 use crate::exo_types::*;

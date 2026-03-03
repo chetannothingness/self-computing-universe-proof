@@ -1,9 +1,7 @@
 use kernel_types::{Hash32, HASH_ZERO, SerPi, hash, Status};
 use kernel_types::receipt::{Receipt, Payload, CompletionProof, SolveOutput};
 use kernel_ledger::{Ledger, Event, EventKind};
-use kernel_instruments::budget::Budget;
 use kernel_contracts::contract::Contract;
-use kernel_contracts::quotient::AnswerQuotient;
 use crate::evaluator;
 use crate::completion::{self, CompletionResult};
 
