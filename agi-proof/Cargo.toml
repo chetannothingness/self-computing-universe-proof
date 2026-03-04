@@ -1,11 +1,7 @@
 [package]
-name = "kernel-cli"
+name = "agi-proof"
 version = "0.1.0"
 edition = "2021"
-
-[[bin]]
-name = "kernel"
-path = "src/main.rs"
 
 [dependencies]
 kernel-types = { path = "../kernel-types" }
@@ -16,12 +12,10 @@ kernel-solver = { path = "../kernel-solver" }
 kernel-self = { path = "../kernel-self" }
 kernel-cap = { path = "../kernel-cap" }
 kernel-goldmaster = { path = "../kernel-goldmaster" }
-kernel-web = { path = "../kernel-web" }
-kernel-spaceengine = { path = "../kernel-spaceengine" }
 kernel-bench = { path = "../kernel-bench" }
-agi-proof = { path = "../agi-proof" }
 blake3 = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-clap = { workspace = true }
-reqwest = { workspace = true }
+ciborium = { workspace = true }
+ed25519-dalek = { workspace = true }
+rand = { workspace = true }
