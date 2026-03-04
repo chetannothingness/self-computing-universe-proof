@@ -1,6 +1,6 @@
 // Phase 8A: Physical Reasoning
-// Full implementation in Week 2.
 
+use kernel_types::hash;
 use kernel_bench::judge::JudgeVerdict;
 use serde::{Serialize, Deserialize};
 
@@ -109,6 +109,57 @@ pub fn judge_physics(task: &PhysicsTask, agent_answer: &PhysicsAnswer) -> JudgeV
     if agent_answer == &correct { JudgeVerdict::Pass } else { JudgeVerdict::Fail }
 }
 
+/// Generate a deterministic physics task from seed and episode.
+pub fn generate_physics_task(seed: &[u8; 32], episode: u32) -> PhysicsTask {
+    let mut ep_buf = Vec::new();
+    ep_buf.extend_from_slice(seed);
+    ep_buf.extend_from_slice(&episode.to_le_bytes());
+    let ep_seed = hash::H(&ep_buf);
+
+    let task_type = ep_seed[0] % 5;
+    match task_type {
+        0 => PhysicsTask::Containment {
+            container_has_hole: ep_seed[1] % 2 == 0,
+            liquid_amount: 100 + (ep_seed[2] as i64 % 900),
+        },
+        1 => {
+            let num_blocks = 2 + (ep_seed[1] as usize % 3);
+            let mut blocks = Vec::with_capacity(num_blocks);
+            for i in 0..num_blocks {
+                blocks.push(Block {
+                    x: 0,
+                    y: (i as i64) * 10,
+                    width: 10,
+                    height: 10,
+                    supported_by: if i == 0 { None } else { Some((i - 1) as u32) },
+                });
+            }
+            let removed = ep_seed[2] as u32 % num_blocks as u32;
+            PhysicsTask::Support { blocks, removed_index: removed }
+        },
+        2 => PhysicsTask::Collision {
+            ball_a_velocity: (
+                (ep_seed[1] as i64) * 10 - 1275,
+                (ep_seed[2] as i64) * 10 - 1275,
+            ),
+            ball_b_velocity: (
+                (ep_seed[3] as i64) * 10 - 1275,
+                (ep_seed[4] as i64) * 10 - 1275,
+            ),
+            ball_a_mass: 1 + (ep_seed[5] as i64 % 10),
+            ball_b_mass: 1 + (ep_seed[6] as i64 % 10),
+        },
+        3 => PhysicsTask::Gravity {
+            object_height: (ep_seed[1] as i64) * 100,
+            surface_below: ep_seed[2] % 2 == 0,
+        },
+        _ => PhysicsTask::Buoyancy {
+            object_density_milli: 100 + (ep_seed[1] as i64 * 10),
+            fluid_density_milli: 800 + (ep_seed[2] as i64 * 4),
+        },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,5 +218,35 @@ mod tests {
             fluid_density_milli: 1000,
         };
         assert_eq!(solve_physics(&task), PhysicsAnswer::Floats);
+    }
+
+    #[test]
+    fn generate_physics_task_deterministic() {
+        let seed = [42u8; 32];
+        let t1 = generate_physics_task(&seed, 0);
+        let t2 = generate_physics_task(&seed, 0);
+        // Serialize to compare (PhysicsTask doesn't impl PartialEq)
+        let s1 = serde_json::to_string(&t1).unwrap();
+        let s2 = serde_json::to_string(&t2).unwrap();
+        assert_eq!(s1, s2);
+    }
+
+    #[test]
+    fn generate_physics_task_different_episodes() {
+        let seed = [42u8; 32];
+        let t1 = serde_json::to_string(&generate_physics_task(&seed, 0)).unwrap();
+        let t2 = serde_json::to_string(&generate_physics_task(&seed, 1)).unwrap();
+        assert_ne!(t1, t2);
+    }
+
+    #[test]
+    fn generated_physics_task_solvable() {
+        // Every generated task should be solvable by solve_physics
+        for ep in 0..20u32 {
+            let seed = [ep as u8; 32];
+            let task = generate_physics_task(&seed, ep);
+            let answer = solve_physics(&task);
+            assert_eq!(judge_physics(&task, &answer), JudgeVerdict::Pass);
+        }
     }
 }

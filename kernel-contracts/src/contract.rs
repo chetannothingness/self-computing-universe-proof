@@ -74,6 +74,19 @@ pub enum EvalSpec {
         /// BuildHash(K) that generated the catalogs.
         kernel_build_hash: Vec<u8>,
     },
+
+    /// Finite computational fragment of an open mathematical problem.
+    /// The kernel builds a real VM program that performs bounded verification
+    /// and produces a genuine FRC proving a finite mathematical fact.
+    MillenniumFinite {
+        /// Problem identifier: "goldbach", "collatz", "twin_primes", "flt",
+        /// "odd_perfect", "mersenne", "zfc_zero_ne_one".
+        problem_id: String,
+        /// Primary bound parameter (e.g., n_max for Goldbach).
+        parameter_n: i64,
+        /// Secondary parameter (e.g., max_iter for Collatz, max_exp for FLT).
+        parameter_aux: Option<i64>,
+    },
 }
 
 impl SerPi for EvalSpec {
@@ -95,6 +108,9 @@ impl SerPi for EvalSpec {
             }
             EvalSpec::SpaceEngine { catalog_hash, scenario_hash, kernel_build_hash } => {
                 canonical_cbor_bytes(&("SpaceEngine", catalog_hash, scenario_hash, kernel_build_hash))
+            }
+            EvalSpec::MillenniumFinite { problem_id, parameter_n, parameter_aux } => {
+                canonical_cbor_bytes(&("MillenniumFinite", problem_id.as_str(), parameter_n, parameter_aux))
             }
         }
     }

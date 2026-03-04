@@ -67,6 +67,20 @@ pub enum EventKind {
     AtlasBuild,
     /// Enhanced verification completed (L0-L3 full stack).
     EnhancedVerify,
+    /// FRC search initiated for a statement.
+    FrcSearch,
+    /// FRC successfully constructed and executed.
+    FrcComplete,
+    /// Gap recorded from failed FRC attempt.
+    GapRecord,
+    /// Missing lemma proved (gap resolved).
+    LemmaProved,
+    /// Schema induction: new schema derived from repeated gaps.
+    SchemaInduction,
+    /// OPP solve started.
+    OppSolveStart,
+    /// OPP verification completed.
+    OppVerifyComplete,
 }
 
 impl SerPi for EventKind {
@@ -103,6 +117,13 @@ impl SerPi for EventKind {
             EventKind::WitnessEncode => 28,
             EventKind::AtlasBuild => 29,
             EventKind::EnhancedVerify => 30,
+            EventKind::FrcSearch => 31,
+            EventKind::FrcComplete => 32,
+            EventKind::GapRecord => 33,
+            EventKind::LemmaProved => 34,
+            EventKind::SchemaInduction => 35,
+            EventKind::OppSolveStart => 36,
+            EventKind::OppVerifyComplete => 37,
         };
         canonical_cbor_bytes(&tag)
     }

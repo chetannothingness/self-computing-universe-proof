@@ -1,0 +1,17 @@
+[package]
+name = "kernel-frc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kernel-types = { path = "../kernel-types" }
+kernel-ledger = { path = "../kernel-ledger" }
+kernel-contracts = { path = "../kernel-contracts" }
+blake3 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ciborium = { workspace = true }
+
+[dev-dependencies]
+kernel-solver = { path = "../kernel-solver" }
+kernel-goldmaster = { path = "../kernel-goldmaster" }

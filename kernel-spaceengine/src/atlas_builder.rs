@@ -140,6 +140,7 @@ impl AtlasBuilder {
             EvalSpec::FormalProof { .. } => ProofDomain::Formal,
             EvalSpec::Dominate { .. } => ProofDomain::Dominate,
             EvalSpec::SpaceEngine { .. } => ProofDomain::SpaceEngine,
+            EvalSpec::MillenniumFinite { .. } => ProofDomain::Arith,
         }
     }
 

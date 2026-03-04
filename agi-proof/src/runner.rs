@@ -168,20 +168,13 @@ impl AgiRunner {
         // 2. Solve via kernel solver
         let output = self.solver.solve(&contract);
 
-        // 3. Judge: for the kernel, UNIQUE with answer = PASS,
-        // UNSAT = the task has no solution (valid answer for inadmissible).
-        let (verdict, reason) = match &output.status {
-            Status::Unique => {
-                if !output.payload.answer.is_empty() {
-                    (JudgeVerdict::Pass, "UNIQUE with verified receipt".to_string())
-                } else {
-                    (JudgeVerdict::Fail, "UNIQUE but no answer payload".to_string())
-                }
-            }
-            Status::Unsat => {
-                (JudgeVerdict::Pass, "UNSAT (task has no solution within domain)".to_string())
-            }
-        };
+        // 3. Judge via domain-specific simulator.
+        // Each domain generates its world, solves the problem, and runs
+        // the actual domain judge. No status-to-verdict shortcuts.
+        let judgment = crate::domain_judge::solve_and_judge(&spec, &contract.description);
+        let verdict = judgment.verdict;
+        let reason = judgment.reason;
+        let experiment_count = judgment.experiments_used;
 
         let verdict_hash = hash::H(&canonical_cbor_bytes(&(&task_id, &reason)));
 
@@ -194,7 +187,7 @@ impl AgiRunner {
             status: output.status.clone(),
             verdict,
             reason,
-            experiment_count: spec.max_experiments,
+            experiment_count,
             cost: output.receipt.completion
                 .as_ref()
                 .map(|c| c.b_star.unwrap_or(0))

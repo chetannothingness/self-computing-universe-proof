@@ -79,7 +79,9 @@ pub fn generate_causal_world(seed: &[u8; 32], episode: u32) -> CausalWorld {
             // ~40 % chance of edge to keep the graph non-trivial but sparse.
             if slot_hash[0] % 5 < 2 {
                 // coefficient_milli in [-2000, 2000] \ {0}
-                let raw = (slot_hash[1] as i64 % 4001) - 2000; // -2000..2000
+                // Use 2 bytes for a proper range (u8 max=255, so single byte % 4001 is a no-op).
+                let raw_unsigned = (slot_hash[1] as i64) | ((slot_hash[2] as i64) << 8);
+                let raw = (raw_unsigned % 4001) - 2000; // -2000..2000
                 let coeff = if raw == 0 { 500 } else { raw };
                 edges.push(CausalEdge {
                     from,
@@ -569,6 +571,27 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// Generated coefficients span the full [-2000, 2000] range, not just negative.
+    #[test]
+    fn generated_coefficients_span_full_range() {
+        let mut any_positive = false;
+        let mut any_negative = false;
+        for ep in 0..50u32 {
+            let seed = [ep as u8; 32];
+            let world = generate_causal_world(&seed, ep);
+            for edge in &world.edges {
+                assert!(
+                    edge.coefficient_milli >= -2000 && edge.coefficient_milli <= 2000,
+                    "coefficient {} out of range for episode {}", edge.coefficient_milli, ep
+                );
+                if edge.coefficient_milli > 0 { any_positive = true; }
+                if edge.coefficient_milli < 0 { any_negative = true; }
+            }
+        }
+        assert!(any_positive, "Should have at least one positive coefficient across 50 episodes");
+        assert!(any_negative, "Should have at least one negative coefficient across 50 episodes");
     }
 
     /// Generated worlds have num_variables in 5..=15.

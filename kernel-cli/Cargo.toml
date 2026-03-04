@@ -19,6 +19,7 @@ kernel-goldmaster = { path = "../kernel-goldmaster" }
 kernel-web = { path = "../kernel-web" }
 kernel-spaceengine = { path = "../kernel-spaceengine" }
 kernel-bench = { path = "../kernel-bench" }
+kernel-frc = { path = "../kernel-frc" }
 agi-proof = { path = "../agi-proof" }
 blake3 = { workspace = true }
 serde = { workspace = true }

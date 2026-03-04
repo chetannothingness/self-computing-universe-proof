@@ -104,6 +104,18 @@ impl CatalogGenerator {
                 EvalSpec::SpaceEngine { .. } => {
                     // Meta-contract — skip catalog generation.
                 }
+                EvalSpec::MillenniumFinite { .. } => {
+                    // Finite fragment — map to a star system.
+                    stars.push(StarSystem {
+                        qid_hex: qid_hex.clone(),
+                        name: format!("KS-{}", name_prefix),
+                        coord_x: cx, coord_y: cy, coord_z: cz,
+                        spectral_class: 0,
+                        luminosity: Rational::new(1, 1),
+                        planet_orbits: vec![Rational::new(1, 1)],
+                        contract_hash: qid,
+                    });
+                }
             }
         }
 

@@ -102,22 +102,32 @@ pub fn generate_math_world(seed: &[u8; 32], episode: u32) -> MathWorld {
     let num_symbols = 3 + (ep_seed[0] as u32 % 6);
     let max_proof_length = 5 + (ep_seed[1] as u32 % 15);
 
-    // Generate simple axioms: symbol(a) => symbol(b)
+    // Generate axioms with a guaranteed reachable chain.
+    // First axiom: base axiom with empty premises (allows proof to start).
     let mut axioms = Vec::new();
     let num_axioms = 2 + (ep_seed[2] as usize % 4);
-    for i in 0..num_axioms {
-        let from_sym = ep_seed[(i * 2 + 3) % 32] as u32 % num_symbols;
-        let to_sym = ep_seed[(i * 2 + 4) % 32] as u32 % num_symbols;
+
+    let base_sym = ep_seed[3] as u32 % num_symbols;
+    axioms.push(Axiom {
+        id: 0,
+        premises: vec![],
+        conclusion: ProofTerm { symbol: base_sym, args: vec![] },
+    });
+
+    // Chain axioms: each derives a new symbol from the previous conclusion.
+    let mut current_sym = base_sym;
+    for i in 1..num_axioms {
+        let next_sym = ep_seed[(i * 2 + 4) % 32] as u32 % num_symbols;
         axioms.push(Axiom {
             id: i as u32,
-            premises: vec![ProofTerm { symbol: from_sym, args: vec![] }],
-            conclusion: ProofTerm { symbol: to_sym, args: vec![] },
+            premises: vec![ProofTerm { symbol: current_sym, args: vec![] }],
+            conclusion: ProofTerm { symbol: next_sym, args: vec![] },
         });
+        current_sym = next_sym;
     }
 
-    // Target is derivable by chaining axioms
-    let target_sym = ep_seed[20] as u32 % num_symbols;
-    let target_theorem = ProofTerm { symbol: target_sym, args: vec![] };
+    // Target: the last symbol in the chain (guaranteed reachable).
+    let target_theorem = ProofTerm { symbol: current_sym, args: vec![] };
 
     MathWorld {
         seed: *seed,
@@ -169,6 +179,68 @@ mod tests {
             },
         ];
         assert_eq!(check_proof(&axioms, &target, &proof), JudgeVerdict::Pass);
+    }
+
+    #[test]
+    fn math_generated_world_has_base_axiom() {
+        for ep in 0..20u32 {
+            let seed = [ep as u8; 32];
+            let world = generate_math_world(&seed, ep);
+            let has_base = world.axioms.iter().any(|a| a.premises.is_empty());
+            assert!(has_base,
+                "Episode {} should have at least one base axiom (empty premises)", ep);
+        }
+    }
+
+    #[test]
+    fn math_generated_world_solvable() {
+        for ep in 0..20u32 {
+            let seed = [ep as u8; 32];
+            let world = generate_math_world(&seed, ep);
+
+            // BFS solver: start from base axioms, chain forward
+            let mut proven: Vec<ProofTerm> = Vec::new();
+            let mut proof_steps: Vec<ProofStep> = Vec::new();
+
+            // Base axioms
+            for axiom in &world.axioms {
+                if axiom.premises.is_empty() {
+                    let result = axiom.conclusion.clone();
+                    if !proven.contains(&result) {
+                        proof_steps.push(ProofStep {
+                            axiom_id: axiom.id,
+                            substitution: BTreeMap::new(),
+                            result: result.clone(),
+                        });
+                        proven.push(result);
+                    }
+                }
+            }
+
+            // Chain forward
+            for _ in 0..world.max_proof_length {
+                for axiom in &world.axioms {
+                    if axiom.premises.len() == 1 {
+                        for p in proven.clone().iter() {
+                            if *p == axiom.premises[0] {
+                                let result = axiom.conclusion.clone();
+                                if !proven.contains(&result) {
+                                    proof_steps.push(ProofStep {
+                                        axiom_id: axiom.id,
+                                        substitution: BTreeMap::new(),
+                                        result: result.clone(),
+                                    });
+                                    proven.push(result);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            assert!(proven.contains(&world.target_theorem),
+                "Episode {} target should be provable", ep);
+        }
     }
 
     #[test]

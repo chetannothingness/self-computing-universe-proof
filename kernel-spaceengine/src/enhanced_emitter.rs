@@ -704,6 +704,9 @@ impl EnhancedEmitter {
                     object_names.push(format!("KC-{}", prefix));
                 }
                 EvalSpec::SpaceEngine { .. } => {}
+                EvalSpec::MillenniumFinite { .. } => {
+                    object_names.push(format!("KS-{}", prefix));
+                }
             }
 
             // Compute witness hash from all file contents for this QID.

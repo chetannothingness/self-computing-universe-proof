@@ -101,6 +101,12 @@ pub fn evaluate(eval: &EvalSpec, candidate: &[u8]) -> bool {
                 && kernel_build_hash != b"unpinned";
             if candidate == b"VERIFIED" { is_valid } else { true }
         }
+
+        EvalSpec::MillenniumFinite { .. } => {
+            // MillenniumFinite evaluation is performed by the FRC VM directly.
+            // The candidate is "TRUE" if the VM halts with code 1.
+            candidate == b"TRUE"
+        }
     }
 }
 

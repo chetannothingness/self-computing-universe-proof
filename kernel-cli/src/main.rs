@@ -13,12 +13,23 @@ use kernel_goldmaster::millennium::MillenniumSuite;
 use kernel_goldmaster::DominanceSuite;
 use kernel_cap::artifact::KernelArtifact;
 use kernel_instruments::budget::Budget;
+use kernel_frc::{
+    FrcSearch as FrcSearchEngine, OppRunner, OppVerifier, FrcResult, Vm,
+    OpenProblemPackage,
+};
+use kernel_frc::schema::{StatementDesc, StatementKind, VariableDesc, ReductionContext};
+use kernel_frc::contract_frc::{build_contract_frc, contract_to_search_problem};
+use kernel_frc::class_c::{ClassCDefinition, CoverageReport};
+use kernel_frc::schema_induction::SchemaInductor;
+use kernel_frc::frc_types::SchemaId;
 use std::fs;
+
+const KERNEL_VERSION: &str = "0.3.0-FRC";
 
 #[derive(Parser)]
 #[command(
     name = "kernel",
-    version = "0.2.0-A1",
+    version = KERNEL_VERSION,
     about = "vFINAL-HUMAN (post-A1): Self-aware deterministic witness machine",
     long_about = "The least fixed point of feasible witnessing over nothingness.\n\
                   Generates tests endogenously, records only witnessed erasures,\n\
@@ -184,6 +195,49 @@ enum Commands {
         #[arg(long)]
         release: String,
     },
+
+    /// Search for an FRC for a statement. Demonstrates the FRC engine.
+    FrcSearch {
+        /// Statement text to reduce.
+        #[arg(long)]
+        statement: String,
+    },
+
+    /// Run the FRC suite: search for FRCs across a test suite.
+    FrcSuite,
+
+    /// Solve an Open Problem Package (OPP).
+    OppSolve {
+        /// Path to OPP JSON file.
+        #[arg(long)]
+        opp: String,
+    },
+
+    /// Verify an OPP result.
+    OppVerify {
+        /// Path to OPP JSON file.
+        #[arg(long)]
+        opp: String,
+        /// Path to FRC result JSON file.
+        #[arg(long)]
+        result: String,
+    },
+
+    /// Build a truthful FRC for a real contract (JSON file).
+    FrcProve {
+        /// Path to contract JSON file.
+        #[arg(short, long)]
+        contract: String,
+    },
+
+    /// Run the full FRC suite across all GoldMaster + Millennium contracts.
+    FrcSuiteFull,
+
+    /// Emit the CLASS_C definition (what the kernel claims decidable).
+    ClassC,
+
+    /// Compute and display FRC coverage metrics.
+    Coverage,
 }
 
 fn main() {
@@ -212,6 +266,14 @@ fn main() {
         Commands::AgiRunAll { seed, output } => cmd_agi_run_all(&seed, &output),
         Commands::AgiReplayBundle { bundle } => cmd_agi_replay_bundle(&bundle),
         Commands::AgiVerifyRelease { release } => cmd_agi_verify_release(&release),
+        Commands::FrcSearch { statement } => cmd_frc_search(&statement),
+        Commands::FrcSuite => cmd_frc_suite(),
+        Commands::OppSolve { opp } => cmd_opp_solve(&opp),
+        Commands::OppVerify { opp, result } => cmd_opp_verify(&opp, &result),
+        Commands::FrcProve { contract } => cmd_frc_prove(&contract),
+        Commands::FrcSuiteFull => cmd_frc_suite_full(),
+        Commands::ClassC => cmd_class_c(),
+        Commands::Coverage => cmd_coverage(),
     }
 }
 
@@ -1453,4 +1515,625 @@ fn cmd_jmcheck(capability_path: &str) {
             std::process::exit(1);
         }
     }
+}
+
+// ── FRC Engine Commands ─────────────────────────────────────────────
+
+fn cmd_frc_search(statement_text: &str) {
+    println!("FRC SEARCH");
+    println!("  Statement: {}", statement_text);
+
+    let mut engine = FrcSearchEngine::new();
+    let mut ledger = kernel_ledger::Ledger::new();
+
+    let stmt_hash = hash::H(statement_text.as_bytes());
+
+    // Parse statement into descriptor
+    let kind = if statement_text.contains("forall") || statement_text.contains("∀") {
+        if statement_text.contains("[") {
+            StatementKind::UniversalFinite
+        } else {
+            StatementKind::UniversalInfinite
+        }
+    } else if statement_text.contains("exists") || statement_text.contains("∃") {
+        StatementKind::ExistentialFinite
+    } else if statement_text.contains("SAT") {
+        StatementKind::BoolSat
+    } else {
+        StatementKind::UniversalInfinite
+    };
+
+    let stmt = StatementDesc {
+        kind,
+        text: statement_text.to_string(),
+        variables: vec![],
+        predicate: statement_text.to_string(),
+        params: vec![],
+    };
+    let ctx = ReductionContext::default_context();
+
+    match engine.search(stmt_hash, &stmt, &ctx, &mut ledger) {
+        FrcResult::Found(frc) => {
+            println!("  Result: FRC FOUND");
+            println!("  Schema: {:?}", frc.schema_id);
+            println!("  B*: {}", frc.b_star);
+            println!("  Program size: {} instructions", frc.program.len());
+            println!("  FRC hash: {}", hash::hex(&frc.frc_hash));
+            println!("  Internal verify: {}", frc.verify_internal());
+
+            let (outcome, state) = kernel_frc::Vm::run(&frc.program, frc.b_star);
+            println!("  VM outcome: {:?}", outcome);
+            println!("  VM steps: {}", state.steps_taken);
+        }
+        FrcResult::Invalid(frontier) => {
+            println!("  Result: INVALID (no FRC in current schema closure)");
+            println!("  Schemas tried: {}", frontier.schemas_tried.len());
+            println!("  Gaps: {}", frontier.gaps.len());
+            if let Some(ref ml) = frontier.minimal_missing_lemma {
+                println!("  Missing lemma: {}", ml.lemma_statement);
+            }
+            println!("  Frontier hash: {}", hash::hex(&frontier.frontier_hash));
+        }
+    }
+}
+
+fn cmd_frc_suite() {
+    println!("FRC SUITE: Running FRC search across test statements\n");
+
+    let mut engine = FrcSearchEngine::new();
+    let mut ledger = kernel_ledger::Ledger::new();
+    let ctx = ReductionContext::default_context();
+
+    // Test suite of statements
+    let test_statements: Vec<(&str, StatementDesc)> = vec![
+        ("forall x in [0,10]: x >= 0", StatementDesc {
+            kind: StatementKind::UniversalFinite,
+            text: "forall x in [0,10]: x >= 0".to_string(),
+            variables: vec![VariableDesc {
+                name: "x".to_string(),
+                domain_lo: Some(0),
+                domain_hi: Some(10),
+                is_finite: true,
+            }],
+            predicate: "x >= 0".to_string(),
+            params: vec![],
+        }),
+        ("exists x in [0,10]: x = 5", StatementDesc {
+            kind: StatementKind::ExistentialFinite,
+            text: "exists x in [0,10]: x = 5".to_string(),
+            variables: vec![VariableDesc {
+                name: "x".to_string(),
+                domain_lo: Some(0),
+                domain_hi: Some(10),
+                is_finite: true,
+            }],
+            predicate: "x = 5".to_string(),
+            params: vec![],
+        }),
+        ("2-variable SAT", StatementDesc {
+            kind: StatementKind::BoolSat,
+            text: "2-variable SAT".to_string(),
+            variables: vec![
+                VariableDesc { name: "x0".to_string(), domain_lo: Some(0), domain_hi: Some(1), is_finite: true },
+                VariableDesc { name: "x1".to_string(), domain_lo: Some(0), domain_hi: Some(1), is_finite: true },
+            ],
+            predicate: "CNF".to_string(),
+            params: vec![],
+        }),
+        ("forall x: P(x) [infinite, no modulus]", StatementDesc {
+            kind: StatementKind::UniversalInfinite,
+            text: "forall x: P(x)".to_string(),
+            variables: vec![VariableDesc {
+                name: "x".to_string(),
+                domain_lo: None,
+                domain_hi: None,
+                is_finite: false,
+            }],
+            predicate: "P(x)".to_string(),
+            params: vec![],
+        }),
+        ("convergence with metastability bound", StatementDesc {
+            kind: StatementKind::UniversalInfinite,
+            text: "convergence".to_string(),
+            variables: vec![],
+            predicate: "stable window".to_string(),
+            params: vec![
+                ("metastability_bound".to_string(), 10),
+                ("window_size".to_string(), 5),
+            ],
+        }),
+        ("analytic bound with interval subdivision", StatementDesc {
+            kind: StatementKind::Analytic,
+            text: "f(x) bounded on [0, 100]".to_string(),
+            variables: vec![VariableDesc {
+                name: "x".to_string(),
+                domain_lo: Some(0),
+                domain_hi: Some(100),
+                is_finite: true,
+            }],
+            predicate: "f(x) in [0,1]".to_string(),
+            params: vec![("n_intervals".to_string(), 20)],
+        }),
+        ("x^2 - 4 = 0 (algebraic)", StatementDesc {
+            kind: StatementKind::Algebraic,
+            text: "x^2 - 4 = 0".to_string(),
+            variables: vec![VariableDesc {
+                name: "x".to_string(),
+                domain_lo: Some(-10),
+                domain_hi: Some(10),
+                is_finite: true,
+            }],
+            predicate: "x^2 - 4 = 0".to_string(),
+            params: vec![
+                ("c0".to_string(), -4),
+                ("c1".to_string(), 0),
+                ("c2".to_string(), 1),
+            ],
+        }),
+        ("infinite universal with epsilon-net", StatementDesc {
+            kind: StatementKind::UniversalInfinite,
+            text: "continuous bounded".to_string(),
+            variables: vec![VariableDesc {
+                name: "x".to_string(),
+                domain_lo: None,
+                domain_hi: None,
+                is_finite: false,
+            }],
+            predicate: "|f(x)| <= M".to_string(),
+            params: vec![("epsilon_net_size".to_string(), 50)],
+        }),
+    ];
+
+    let mut found = 0u64;
+    let mut invalid = 0u64;
+    let total = test_statements.len() as u64;
+
+    for (label, stmt) in &test_statements {
+        let stmt_hash = hash::H(label.as_bytes());
+        let result = engine.search(stmt_hash, stmt, &ctx, &mut ledger);
+
+        match result {
+            FrcResult::Found(frc) => {
+                let (outcome, state) = kernel_frc::Vm::run(&frc.program, frc.b_star);
+                println!("  [FRC] {:50} → {:?} (schema={:?}, B*={}, steps={})",
+                    label, outcome, frc.schema_id, frc.b_star, state.steps_taken);
+                found += 1;
+            }
+            FrcResult::Invalid(frontier) => {
+                let gap_desc = frontier.minimal_missing_lemma
+                    .as_ref()
+                    .map(|ml| ml.lemma_statement.clone())
+                    .unwrap_or_else(|| "no specific lemma".to_string());
+                println!("  [INV] {:50} → INVALID (gaps={}, missing={})",
+                    label, frontier.gaps.len(), gap_desc);
+                invalid += 1;
+            }
+        }
+    }
+
+    let metrics = engine.metrics(total);
+    println!("\nFRC SUITE RESULTS:");
+    println!("  Total statements: {}", total);
+    println!("  FRC found: {} ({:.1}%)", found, found as f64 / total as f64 * 100.0);
+    println!("  Invalid: {}", invalid);
+    println!("  Motif library: {} lemmas", metrics.motif_count);
+    println!("  Gap ledger: {} active gaps", metrics.gap_count);
+    println!("  Coverage rate: {}.{}%", metrics.coverage_rate_milli / 10, metrics.coverage_rate_milli % 10);
+    println!("  Ledger events: {}", ledger.len());
+}
+
+fn cmd_opp_solve(opp_path: &str) {
+    let json = fs::read_to_string(opp_path).expect("Failed to read OPP file");
+    let opp: OpenProblemPackage = serde_json::from_str(&json).expect("Failed to parse OPP");
+
+    println!("OPP SOLVE");
+    println!("  Statement: {}", opp.statement);
+    println!("  OPP hash: {}", hash::hex(&opp.opp_hash));
+
+    let mut runner = OppRunner::new();
+    let mut ledger = kernel_ledger::Ledger::new();
+
+    match runner.solve(&opp, &mut ledger) {
+        kernel_frc::opp::OppResult::Proof { frc, receipt } => {
+            println!("  Result: PROOF (UNIQUE)");
+            println!("  Schema: {:?}", frc.schema_id);
+            println!("  B*: {}", frc.b_star);
+            println!("  Trace head: {}", hash::hex(&receipt.trace_head));
+            println!("  Merkle root: {}", hash::hex(&receipt.merkle_root));
+            println!("  Receipt hash: {}", hash::hex(&receipt.receipt_hash));
+
+            // Write result
+            let result = serde_json::json!({
+                "status": "PROOF",
+                "frc_hash": hash::hex(&frc.frc_hash),
+                "receipt_hash": hash::hex(&receipt.receipt_hash),
+                "schema": format!("{:?}", frc.schema_id),
+                "b_star": frc.b_star,
+            });
+            println!("{}", serde_json::to_string_pretty(&result).unwrap());
+        }
+        kernel_frc::opp::OppResult::Disproof { frc, receipt } => {
+            println!("  Result: DISPROOF");
+            println!("  Schema: {:?}", frc.schema_id);
+            println!("  Receipt hash: {}", hash::hex(&receipt.receipt_hash));
+        }
+        kernel_frc::opp::OppResult::Invalid { frontier } => {
+            println!("  Result: INVALID");
+            println!("  Schemas tried: {}", frontier.schemas_tried.len());
+            println!("  Gaps: {}", frontier.gaps.len());
+            if let Some(ref ml) = frontier.minimal_missing_lemma {
+                println!("  Missing lemma: {}", ml.lemma_statement);
+            }
+            println!("  Frontier hash: {}", hash::hex(&frontier.frontier_hash));
+        }
+    }
+}
+
+fn cmd_opp_verify(opp_path: &str, _result_path: &str) {
+    let json = fs::read_to_string(opp_path).expect("Failed to read OPP file");
+    let opp: OpenProblemPackage = serde_json::from_str(&json).expect("Failed to parse OPP");
+
+    println!("OPP VERIFY");
+    println!("  OPP: {}", hash::hex(&opp.opp_hash));
+
+    // Re-solve and verify
+    let mut runner = OppRunner::new();
+    let mut ledger = kernel_ledger::Ledger::new();
+
+    match runner.solve(&opp, &mut ledger) {
+        kernel_frc::opp::OppResult::Proof { frc, receipt } => {
+            let mut verify_ledger = kernel_ledger::Ledger::new();
+            let result = OppVerifier::verify(&opp, &frc, &receipt, &mut verify_ledger);
+            if result.overall {
+                println!("  {}", result.details);
+            } else {
+                println!("  {}", result.details);
+                std::process::exit(1);
+            }
+        }
+        kernel_frc::opp::OppResult::Disproof { frc, receipt } => {
+            let mut verify_ledger = kernel_ledger::Ledger::new();
+            let result = OppVerifier::verify(&opp, &frc, &receipt, &mut verify_ledger);
+            if result.overall {
+                println!("  VERIFIED (DISPROOF): {}", result.details);
+            } else {
+                println!("  FAIL: {}", result.details);
+                std::process::exit(1);
+            }
+        }
+        kernel_frc::opp::OppResult::Invalid { frontier } => {
+            let verified = OppVerifier::verify_frontier(&opp, &frontier);
+            if verified {
+                println!("  VERIFIED (INVALID): frontier is consistent");
+            } else {
+                println!("  FAIL: frontier verification failed");
+                std::process::exit(1);
+            }
+        }
+    }
+}
+
+fn cmd_frc_prove(contract_path: &str) {
+    let json = fs::read_to_string(contract_path).expect("Failed to read contract file");
+    let contract = compile_contract(&json).expect("Failed to compile contract");
+    let mut ledger = kernel_ledger::Ledger::new();
+
+    println!("CONTRACT:   \"{}\" (qid: {})", contract.description, hash::hex(&contract.qid));
+
+    // Show search problem conversion
+    match contract_to_search_problem(&contract) {
+        Ok(problem) => {
+            println!("SEARCH:     {:?}", problem);
+        }
+        Err(frontier) => {
+            println!("SEARCH:     INADMISSIBLE — proof space not finitely enumerable");
+            println!("FRONTIER:   Gap(goal: \"{}\", schema: none applicable)",
+                frontier.gaps.first().map(|g| g.goal_statement.as_str()).unwrap_or("unknown"));
+            if let Some(ref ml) = frontier.minimal_missing_lemma {
+                println!("REMEDY:     {}", ml.lemma_statement);
+            }
+            println!("STATUS:     INVALID (correctly rejected under A1)");
+            return;
+        }
+    }
+
+    // Build FRC
+    match build_contract_frc(&contract, &mut ledger) {
+        Ok(frc) => {
+            println!("PROGRAM:    {} instructions, B* = {}", frc.program.len(), frc.b_star);
+            let (outcome, state) = Vm::run(&frc.program, frc.b_star);
+            match &outcome {
+                kernel_frc::VmOutcome::Halted(v) => {
+                    println!("VM RESULT:  Halted({}) in {} steps", v, state.steps_taken);
+                    if *v == 1 {
+                        // Show witness from memory slot 0
+                        println!("WITNESS:    mem[0] = {}", state.memory.get(&0).copied().unwrap_or(0));
+                    }
+                }
+                other => println!("VM RESULT:  {:?}", other),
+            }
+            println!("FRC HASH:   {}", hash::hex(&frc.frc_hash));
+            println!("PROOF_EQ:   contract_hash → program_hash via predicate_hash");
+            println!("PROOF_TOTAL: {} instructions, bounded loop, B*={}",
+                frc.program.len(), frc.b_star);
+            println!("SCHEMA:     {:?}", frc.schema_id);
+            println!("INTERNAL:   {}", if frc.verify_internal() { "VERIFIED" } else { "FAILED" });
+
+            // Cross-verify against solver
+            let mut solver = Solver::new();
+            let output = solver.solve(&contract);
+            let consistent = kernel_frc::contract_frc::verify_frc_against_solver(
+                &contract, &frc, &output.status,
+            );
+            println!("STATUS:     {} ({})",
+                output.status,
+                if consistent { "verified against solver" } else { "INCONSISTENCY DETECTED" });
+        }
+        Err(frontier) => {
+            println!("RESULT:     FRC BUILD FAILED");
+            for gap in &frontier.gaps {
+                println!("GAP:        {}", gap.goal_statement);
+            }
+            println!("FRONTIER:   {}", hash::hex(&frontier.frontier_hash));
+        }
+    }
+}
+
+fn cmd_frc_suite_full() {
+    println!("========================================================");
+    println!("  FRC SUITE (FULL): Truthful FRCs for all contracts");
+    println!("========================================================");
+    println!();
+
+    let mut ledger = kernel_ledger::Ledger::new();
+    let mut frc_found = 0u64;
+    let mut invalid_count = 0u64;
+    let mut gap_ledger = kernel_frc::GapLedger::new();
+    let mut motif_library = kernel_frc::MotifLibrary::new();
+
+    // GoldMaster suite
+    let gm_suite = GoldMasterSuite::v1();
+    println!("=== GOLDMASTER CONTRACTS ({}) ===", gm_suite.len());
+
+    for (i, contract) in gm_suite.contracts.iter().enumerate() {
+
+        match build_contract_frc(contract, &mut ledger) {
+            Ok(frc) => {
+                let (outcome, state) = Vm::run(&frc.program, frc.b_star);
+                // Cross-verify against solver
+                let mut solver = Solver::new();
+                let output = solver.solve(contract);
+                let consistent = kernel_frc::contract_frc::verify_frc_against_solver(
+                    contract, &frc, &output.status,
+                );
+                let status_char = if consistent { "OK" } else { "!!" };
+                println!("  Q{}: {:40} → {:?} (B*={}, steps={}) [{}] {}",
+                    i, contract.description, outcome,
+                    frc.b_star, state.steps_taken, status_char, output.status);
+                motif_library.add_motif(contract.qid, contract.description.clone(), frc);
+                frc_found += 1;
+            }
+            Err(frontier) => {
+                let gap_desc = frontier.gaps.first()
+                    .map(|g| truncate_safe(&g.goal_statement, 60))
+                    .unwrap_or_else(|| "no specific gap".to_string());
+                println!("  Q{}: {:40} → INVALID ({})", i, contract.description, gap_desc);
+                for gap in &frontier.gaps {
+                    gap_ledger.record_gap(gap.clone());
+                }
+                invalid_count += 1;
+            }
+        }
+    }
+    println!();
+
+    // Millennium suite
+    let msuite = MillenniumSuite::build();
+
+    // Millennium problems
+    println!("=== MILLENNIUM PRIZE PROBLEMS ({}) ===", msuite.millennium.len());
+    for (i, contract) in msuite.millennium.iter().enumerate() {
+
+        match build_contract_frc(contract, &mut ledger) {
+            Ok(frc) => {
+                let (outcome, _state) = Vm::run(&frc.program, frc.b_star);
+                println!("  M{}: {:40} → {:?} (B*={})", i, contract.description, outcome, frc.b_star);
+                motif_library.add_motif(contract.qid, contract.description.clone(), frc);
+                frc_found += 1;
+            }
+            Err(frontier) => {
+                let gap_desc = frontier.minimal_missing_lemma
+                    .as_ref()
+                    .map(|ml| truncate_safe(&ml.lemma_statement, 60))
+                    .unwrap_or_else(|| "inadmissible".to_string());
+                println!("  M{}: {:40} → INVALID ({})", i, contract.description, gap_desc);
+                for gap in &frontier.gaps {
+                    gap_ledger.record_gap(gap.clone());
+                }
+                invalid_count += 1;
+            }
+        }
+    }
+    println!();
+
+    // Sanity ladder
+    println!("=== SANITY LADDER ({}) ===", msuite.ladder.len());
+    for (i, contract) in msuite.ladder.iter().enumerate() {
+
+        match build_contract_frc(contract, &mut ledger) {
+            Ok(frc) => {
+                let (outcome, state) = Vm::run(&frc.program, frc.b_star);
+                println!("  L{:02}: {:40} → {:?} (B*={}, steps={})",
+                    i, contract.description, outcome, frc.b_star, state.steps_taken);
+                motif_library.add_motif(contract.qid, contract.description.clone(), frc);
+                frc_found += 1;
+            }
+            Err(frontier) => {
+                let gap_desc = frontier.gaps.first()
+                    .map(|g| truncate_safe(&g.goal_statement, 60))
+                    .unwrap_or_else(|| "no gap".to_string());
+                println!("  L{:02}: {:40} → INVALID ({})", i, contract.description, gap_desc);
+                for gap in &frontier.gaps {
+                    gap_ledger.record_gap(gap.clone());
+                }
+                invalid_count += 1;
+            }
+        }
+    }
+    println!();
+
+    // Adversarial
+    println!("=== ADVERSARIAL ({}) ===", msuite.adversarial.len());
+    for (i, contract) in msuite.adversarial.iter().enumerate() {
+
+        match build_contract_frc(contract, &mut ledger) {
+            Ok(frc) => {
+                let (outcome, state) = Vm::run(&frc.program, frc.b_star);
+                println!("  A{:02}: {:40} → {:?} (B*={}, steps={})",
+                    i, contract.description, outcome, frc.b_star, state.steps_taken);
+                motif_library.add_motif(contract.qid, contract.description.clone(), frc);
+                frc_found += 1;
+            }
+            Err(frontier) => {
+                let gap_desc = frontier.gaps.first()
+                    .map(|g| truncate_safe(&g.goal_statement, 60))
+                    .unwrap_or_else(|| "no gap".to_string());
+                println!("  A{:02}: {:40} → INVALID ({})", i, contract.description, gap_desc);
+                for gap in &frontier.gaps {
+                    gap_ledger.record_gap(gap.clone());
+                }
+                invalid_count += 1;
+            }
+        }
+    }
+    println!();
+
+    // Finite fragments of open problems (real computations)
+    println!("=== FINITE FRAGMENTS ({}) ===", msuite.finite.len());
+    for (i, contract) in msuite.finite.iter().enumerate() {
+
+        match build_contract_frc(contract, &mut ledger) {
+            Ok(frc) => {
+                let (outcome, state) = Vm::run(&frc.program, frc.b_star);
+                let verified = matches!(outcome, kernel_frc::VmOutcome::Halted(1));
+                let status_str = if verified { "VERIFIED" } else { "FAILED" };
+                println!("  MF{}: {:50} → {:?} (B*={}, steps={}) [{}]",
+                    i, contract.description, outcome,
+                    frc.b_star, state.steps_taken, status_str);
+                motif_library.add_motif(contract.qid, contract.description.clone(), frc);
+                frc_found += 1;
+            }
+            Err(frontier) => {
+                let gap_desc = frontier.gaps.first()
+                    .map(|g| truncate_safe(&g.goal_statement, 60))
+                    .unwrap_or_else(|| "no gap".to_string());
+                println!("  MF{}: {:50} → INVALID ({})", i, contract.description, gap_desc);
+                for gap in &frontier.gaps {
+                    gap_ledger.record_gap(gap.clone());
+                }
+                invalid_count += 1;
+            }
+        }
+    }
+    println!();
+
+    // Coverage report
+    let report = CoverageReport::compute(
+        frc_found, invalid_count, &gap_ledger, &motif_library,
+        6, // base schemas
+        None,
+    );
+    println!("========================================================");
+    println!("{}", report.display());
+    println!("  Ledger events: {}", ledger.len());
+    println!("========================================================");
+}
+
+fn cmd_class_c() {
+    println!("=== CLASS_C DEFINITION ===");
+    println!();
+
+    let schemas = vec![
+        SchemaId::BoundedCounterexample,
+        SchemaId::FiniteSearch,
+        SchemaId::EffectiveCompactness,
+        SchemaId::ProofMining,
+        SchemaId::AlgebraicDecision,
+        SchemaId::CertifiedNumerics,
+    ];
+    let motif_lib = kernel_frc::MotifLibrary::new();
+    let inductor = SchemaInductor::new();
+    let class_c = ClassCDefinition::build(&schemas, &motif_lib, &inductor);
+
+    println!("{}", class_c.display());
+}
+
+fn cmd_coverage() {
+    println!("=== FRC COVERAGE METRICS ===");
+    println!();
+
+    let mut ledger = kernel_ledger::Ledger::new();
+    let mut frc_found = 0u64;
+    let mut invalid_count = 0u64;
+    let mut gap_ledger = kernel_frc::GapLedger::new();
+    let mut motif_library = kernel_frc::MotifLibrary::new();
+
+    // Run all GoldMaster contracts
+    let gm_suite = GoldMasterSuite::v1();
+    for contract in &gm_suite.contracts {
+        match build_contract_frc(contract, &mut ledger) {
+            Ok(frc) => {
+                motif_library.add_motif(contract.qid, contract.description.clone(), frc);
+                frc_found += 1;
+            }
+            Err(frontier) => {
+                for gap in &frontier.gaps {
+                    gap_ledger.record_gap(gap.clone());
+                }
+                invalid_count += 1;
+            }
+        }
+    }
+
+    // Run all Millennium contracts
+    let msuite = MillenniumSuite::build();
+    let all_millennium: Vec<&kernel_contracts::contract::Contract> = msuite.millennium.iter()
+        .chain(msuite.ladder.iter())
+        .chain(msuite.adversarial.iter())
+        .collect();
+
+    for contract in all_millennium {
+        match build_contract_frc(contract, &mut ledger) {
+            Ok(frc) => {
+                motif_library.add_motif(contract.qid, contract.description.clone(), frc);
+                frc_found += 1;
+            }
+            Err(frontier) => {
+                for gap in &frontier.gaps {
+                    gap_ledger.record_gap(gap.clone());
+                }
+                invalid_count += 1;
+            }
+        }
+    }
+
+    let report = CoverageReport::compute(
+        frc_found, invalid_count, &gap_ledger, &motif_library,
+        6, None,
+    );
+    println!("{}", report.display());
+
+    // Also emit the CLASS_C identity
+    let schemas = vec![
+        SchemaId::BoundedCounterexample,
+        SchemaId::FiniteSearch,
+        SchemaId::EffectiveCompactness,
+        SchemaId::ProofMining,
+        SchemaId::AlgebraicDecision,
+        SchemaId::CertifiedNumerics,
+    ];
+    let inductor = SchemaInductor::new();
+    let class_c = ClassCDefinition::build(&schemas, &motif_library, &inductor);
+    println!();
+    println!("{}", class_c.display());
 }

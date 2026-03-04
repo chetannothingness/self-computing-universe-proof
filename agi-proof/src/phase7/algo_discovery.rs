@@ -427,8 +427,12 @@ fn is_connected(edges: &[(u32, u32, i64)], num_nodes: u32) -> bool {
     visited.len() as u32 >= num_nodes
 }
 
-/// Run the naive greedy baseline: sort edges by weight ascending, greedily select
-/// a spanning tree (minimum weight edges avoiding cycles).
+/// Run the naive greedy baseline: select edges in graph order (no sorting),
+/// greedily building a spanning tree by avoiding cycles.
+///
+/// This is deliberately suboptimal — it does NOT sort by weight, so it picks
+/// edges in whatever order they appear in the graph representation.
+/// A smarter algorithm (e.g., GreedyMin = Kruskal's) can outperform this.
 ///
 /// Returns: total score across all instances (using same scoring as run_algorithm).
 pub fn run_naive_greedy(instances: &[ProblemInstance]) -> i64 {
@@ -441,10 +445,8 @@ pub fn run_naive_greedy(instances: &[ProblemInstance]) -> i64 {
             .map(|m| m + 1)
             .unwrap_or(0);
 
-        let mut edges = instance.graph.clone();
-        edges.sort_by_key(|&(_, _, w)| w);
-
-        let selected = greedy_select(&edges, num_nodes);
+        // No sorting — use edges in their natural graph order (suboptimal).
+        let selected = greedy_select(&instance.graph, num_nodes);
         let weight_sum: i64 = selected.iter().map(|&(_, _, w)| w).sum();
 
         // Same scoring as run_algorithm
@@ -584,14 +586,26 @@ mod tests {
         let world = generate_algo_world(&seed, 0);
 
         let score = run_naive_greedy(&world.problem_instances);
-        // Greedy on MST problem should produce score = optimal*2 - greedy_weight.
-        // Since greedy_min IS optimal for MST, score should equal optimal_value.
-        // score = sum(optimal*2 - greedy_weight) and greedy_weight == optimal for MST
-        // so score = sum(optimal)
-        let expected: i64 = world.problem_instances.iter()
+        // Naive greedy (unsorted) should produce a valid spanning tree but
+        // NOT necessarily optimal. Its score should be <= optimal score.
+        let optimal_score: i64 = world.problem_instances.iter()
             .map(|inst| inst.optimal_value)
             .sum();
-        assert_eq!(score, expected,
-            "Naive greedy on MST should match optimal");
+        assert!(score <= optimal_score,
+            "Naive greedy (unsorted) should be at most as good as optimal: naive={}, optimal={}",
+            score, optimal_score);
+    }
+
+    #[test]
+    fn greedy_min_beats_naive_greedy() {
+        // GreedyMin (Kruskal's) should beat the naive unsorted baseline.
+        let seed = [55u8; 32];
+        let world = generate_algo_world(&seed, 0);
+        let proposed = ProposedAlgorithm {
+            steps: vec![Instruction::GreedyMin],
+        };
+        let verdict = judge_algorithm(&world, &proposed);
+        assert_eq!(verdict, JudgeVerdict::Pass,
+            "GreedyMin (optimal) should beat naive unsorted baseline");
     }
 }

@@ -23,7 +23,35 @@ pub struct Reaction {
 }
 
 /// Judge: was target compound synthesized?
+///
+/// Verifies three properties:
+/// 1. Target species reaches threshold concentration.
+/// 2. No species has negative concentration (physically impossible).
+/// 3. Total mass is conserved (sum of all concentrations equals initial total).
 pub fn judge_synthesis(world: &ChemWorld, final_state: &[(u32, i64)]) -> JudgeVerdict {
+    // Check non-negative concentrations
+    for &(_species, conc) in final_state {
+        if conc < 0 {
+            return JudgeVerdict::Fail;
+        }
+    }
+
+    // Mass conservation: total concentration must equal initial total.
+    // Missing species default to 0 in the final state.
+    let initial_total: i64 = world.initial_concentrations.iter().sum();
+    let mut final_total: i64 = 0;
+    for i in 0..world.num_species {
+        let conc = final_state.iter()
+            .find(|(s, _)| *s == i)
+            .map(|(_, c)| *c)
+            .unwrap_or(0);
+        final_total += conc;
+    }
+    if final_total != initial_total {
+        return JudgeVerdict::Fail;
+    }
+
+    // Threshold check
     let target_conc = final_state.iter()
         .find(|(s, _)| *s == world.target_species)
         .map(|(_, c)| *c)
@@ -96,13 +124,14 @@ mod tests {
     fn chem_judge_synthesis_passes() {
         let world = ChemWorld {
             seed: [0u8; 32],
-            num_species: 5,
+            num_species: 3,
             reactions: vec![],
-            initial_concentrations: vec![0; 5],
+            initial_concentrations: vec![200, 100, 0], // total = 300
             target_species: 2,
             target_threshold: 100,
         };
-        let final_state = vec![(2, 200)]; // above threshold
+        // Mass conserved: 0 + 0 + 300 = 300, target >= 100
+        let final_state = vec![(0, 0), (1, 0), (2, 300)];
         assert_eq!(judge_synthesis(&world, &final_state), JudgeVerdict::Pass);
     }
 
@@ -118,6 +147,51 @@ mod tests {
         };
         let final_state = vec![(0, 500)]; // wrong species
         assert_eq!(judge_synthesis(&world, &final_state), JudgeVerdict::Fail);
+    }
+
+    #[test]
+    fn chem_judge_negative_concentration_fails() {
+        let world = ChemWorld {
+            seed: [0u8; 32],
+            num_species: 3,
+            reactions: vec![],
+            initial_concentrations: vec![100, 200, 300],
+            target_species: 2,
+            target_threshold: 100,
+        };
+        // Negative concentration: physically impossible
+        let final_state = vec![(0, -50), (1, 250), (2, 400)];
+        assert_eq!(judge_synthesis(&world, &final_state), JudgeVerdict::Fail);
+    }
+
+    #[test]
+    fn chem_judge_mass_not_conserved_fails() {
+        let world = ChemWorld {
+            seed: [0u8; 32],
+            num_species: 3,
+            reactions: vec![],
+            initial_concentrations: vec![100, 200, 300], // total = 600
+            target_species: 2,
+            target_threshold: 100,
+        };
+        // Total = 100 + 200 + 400 = 700 ≠ 600 (mass not conserved)
+        let final_state = vec![(0, 100), (1, 200), (2, 400)];
+        assert_eq!(judge_synthesis(&world, &final_state), JudgeVerdict::Fail);
+    }
+
+    #[test]
+    fn chem_judge_mass_conserved_passes() {
+        let world = ChemWorld {
+            seed: [0u8; 32],
+            num_species: 3,
+            reactions: vec![],
+            initial_concentrations: vec![100, 200, 300], // total = 600
+            target_species: 2,
+            target_threshold: 100,
+        };
+        // Total = 0 + 100 + 500 = 600 (mass conserved, target >= threshold)
+        let final_state = vec![(0, 0), (1, 100), (2, 500)];
+        assert_eq!(judge_synthesis(&world, &final_state), JudgeVerdict::Pass);
     }
 
     #[test]

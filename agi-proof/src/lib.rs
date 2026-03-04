@@ -1,6 +1,7 @@
 pub mod eval_specs;
 pub mod compiler_ext;
 pub mod runner;
+pub mod domain_judge;
 pub mod receipt_bundle;
 pub mod release;
 pub mod phase_criteria;

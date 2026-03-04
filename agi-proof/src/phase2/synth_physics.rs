@@ -99,15 +99,16 @@ fn step_physics(world: &PhysicsWorld, state: &mut PhysicsState) {
     state.time_step += 1;
 }
 
-/// Compute kinetic energy (integer).
-fn compute_energy(_world: &PhysicsWorld, state: &PhysicsState) -> i64 {
+/// Compute mass-weighted kinetic energy (integer).
+/// Uses conservation_constants as body masses.
+fn compute_energy(world: &PhysicsWorld, state: &PhysicsState) -> i64 {
     let mut energy = 0i64;
-    for v in &state.velocities {
-        energy = energy.saturating_add(
-            v.0.saturating_mul(v.0) / 1000
+    for (i, v) in state.velocities.iter().enumerate() {
+        let mass = world.conservation_constants.get(i).copied().unwrap_or(100);
+        let ke = v.0.saturating_mul(v.0) / 1000
             + v.1.saturating_mul(v.1) / 1000
-            + v.2.saturating_mul(v.2) / 1000
-        );
+            + v.2.saturating_mul(v.2) / 1000;
+        energy = energy.saturating_add(mass.saturating_mul(ke) / 1000);
     }
     energy
 }
@@ -127,10 +128,10 @@ pub fn generate_physics_world(seed: &[u8; 32], episode: u32) -> PhysicsWorld {
     cons_buf.extend_from_slice(&ep_seed);
     cons_buf.extend_from_slice(b"conservation");
     let cons_hash = hash::H(&cons_buf);
-    let conservation_constants = vec![
-        (cons_hash[0] as i64 + 1) * 100,
-        (cons_hash[1] as i64 + 1) * 50,
-    ];
+    // One mass per body (conservation_constants serve as body masses).
+    let conservation_constants: Vec<i64> = (0..num_bodies as usize)
+        .map(|i| (cons_hash[i % 32] as i64 + 1) * 100)
+        .collect();
 
     let mut int_buf = Vec::new();
     int_buf.extend_from_slice(&ep_seed);
@@ -206,7 +207,7 @@ mod tests {
         let world = PhysicsWorld {
             seed: [0u8; 32],
             num_bodies: 2,
-            conservation_constants: vec![100],
+            conservation_constants: vec![100, 100],
             interaction_matrix: vec![vec![0, 100], vec![100, 0]],
             timestep_milli: 1000,
         };

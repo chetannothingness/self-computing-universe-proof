@@ -36,6 +36,10 @@ pub struct PredictedOutput {
     pub answer_hash: Hash32,
     /// Full output hash for quick comparison.
     pub output_hash: Hash32,
+    /// Predicted FRC schema that will succeed (if FRC-capable).
+    pub frc_schema_id: Option<String>,
+    /// Predicted FRC hash (if FRC-capable).
+    pub frc_hash: Option<Hash32>,
 }
 
 impl SerPi for PredictedOutput {
@@ -48,8 +52,22 @@ impl SerPi for PredictedOutput {
         buf.extend_from_slice(&self.status_hash.ser_pi());
         buf.extend_from_slice(&self.answer_hash.ser_pi());
         buf.extend_from_slice(&self.output_hash.ser_pi());
+        if let Some(ref schema) = self.frc_schema_id {
+            buf.extend_from_slice(schema.as_bytes());
+        }
+        if let Some(ref fh) = self.frc_hash {
+            buf.extend_from_slice(&fh.ser_pi());
+        }
         canonical_cbor_bytes(&buf)
     }
+}
+
+/// Result of verifying an FRC prediction.
+#[derive(Debug)]
+pub enum FrcVerifyResult {
+    NoPrediction,
+    Match,
+    Mismatch { predicted: Hash32, actual: Hash32 },
 }
 
 impl SelfModel {
@@ -68,8 +86,40 @@ impl SelfModel {
             status_hash: output.status.ser_pi_hash(),
             answer_hash: hash::H(output.payload.answer.as_bytes()),
             output_hash: output.ser_pi_hash(),
+            frc_schema_id: None,
+            frc_hash: None,
         };
         self.predictions.insert(key, predicted);
+    }
+
+    /// Learn FRC outcome for a contract. Called after build_contract_frc succeeds.
+    pub fn learn_frc(&mut self, contract: &Contract, initial_ledger_head: Hash32, schema_id: &str, frc_hash: Hash32) {
+        let key = (contract.qid, initial_ledger_head);
+        if let Some(pred) = self.predictions.get_mut(&key) {
+            pred.frc_schema_id = Some(schema_id.to_string());
+            pred.frc_hash = Some(frc_hash);
+        }
+    }
+
+    /// Verify FRC prediction against actual FRC result.
+    pub fn verify_frc(&self, contract: &Contract, initial_ledger_head: Hash32, actual_frc_hash: Hash32) -> FrcVerifyResult {
+        let key = (contract.qid, initial_ledger_head);
+        match self.predictions.get(&key) {
+            None => FrcVerifyResult::NoPrediction,
+            Some(pred) => match &pred.frc_hash {
+                None => FrcVerifyResult::NoPrediction,
+                Some(predicted) => {
+                    if *predicted == actual_frc_hash {
+                        FrcVerifyResult::Match
+                    } else {
+                        FrcVerifyResult::Mismatch {
+                            predicted: *predicted,
+                            actual: actual_frc_hash,
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /// Predict the output for a given contract and initial ledger head.

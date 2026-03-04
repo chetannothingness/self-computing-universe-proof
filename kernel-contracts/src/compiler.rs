@@ -49,6 +49,7 @@ pub fn compile_contract(json: &str) -> Result<Contract, String> {
         "formal_proof" => compile_formal_proof(&val, budget, tiebreak, description),
         "dominate" => compile_dominate(&val, budget, tiebreak, description),
         "space_engine" => compile_space_engine(&val, budget, tiebreak, description),
+        "millennium_finite" => compile_millennium_finite(&val, budget, tiebreak, description),
         other => Err(format!("Unknown contract type: {}", other)),
     }
 }
@@ -266,6 +267,34 @@ fn compile_space_engine(
         catalog_hash,
         scenario_hash,
         kernel_build_hash,
+    };
+
+    Ok(Contract::new(alphabet, eval, budget, tiebreak, description))
+}
+
+fn compile_millennium_finite(
+    val: &Value,
+    budget: ContractBudget,
+    tiebreak: Tiebreak,
+    description: String,
+) -> Result<Contract, String> {
+    let problem_id = val.get("problem_id")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'problem_id' for millennium_finite")?
+        .to_string();
+
+    let parameter_n = val.get("parameter_n")
+        .and_then(|v| v.as_i64())
+        .ok_or("Missing 'parameter_n' for millennium_finite")?;
+
+    let parameter_aux = val.get("parameter_aux")
+        .and_then(|v| v.as_i64());
+
+    let alphabet = AnswerAlphabet::Bool;
+    let eval = EvalSpec::MillenniumFinite {
+        problem_id,
+        parameter_n,
+        parameter_aux,
     };
 
     Ok(Contract::new(alphabet, eval, budget, tiebreak, description))

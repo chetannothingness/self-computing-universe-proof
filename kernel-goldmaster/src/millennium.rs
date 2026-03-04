@@ -17,6 +17,8 @@ pub struct MillenniumSuite {
     pub ladder: Vec<Contract>,
     /// Adversarial: designed to tempt bluffing.
     pub adversarial: Vec<Contract>,
+    /// Finite computational fragments of open problems (real computations).
+    pub finite: Vec<Contract>,
 }
 
 pub struct BudgetLevel {
@@ -38,11 +40,12 @@ impl MillenniumSuite {
             millennium: build_millennium_contracts(),
             ladder: build_sanity_ladder(),
             adversarial: build_adversarial_contracts(),
+            finite: build_millennium_finite_contracts(),
         }
     }
 
     pub fn total_contracts(&self) -> usize {
-        self.millennium.len() + self.ladder.len() + self.adversarial.len()
+        self.millennium.len() + self.ladder.len() + self.adversarial.len() + self.finite.len()
     }
 }
 
@@ -334,5 +337,137 @@ fn build_adversarial_contracts() -> Vec<Contract> {
 
     specs.iter()
         .map(|s| compile_contract(s).expect("Adversarial contract must compile"))
+        .collect()
+}
+
+/// Build finite computational fragments of open mathematical problems.
+///
+/// These are SOLVABLE: the VM actually runs the computation and produces
+/// a genuine FRC proving a real mathematical fact over a bounded range.
+///
+/// MF0:  Goldbach verified for even n ∈ [4, 1000]
+/// MF1:  Collatz verified for n ∈ [1, 5000], max 1000 iterations
+/// MF2:  Twin primes exist in [2, 10000] (witness: 3, 5)
+/// MF3:  FLT verified for n∈[3,7], a,b,c∈[1,40]
+/// MF4:  No odd perfect number in [1, 5000]
+/// MF5:  Mersenne prime exists for p∈[2,31] (witness: 2^2-1=3)
+/// MF6:  0 ≠ 1 (ZFC consistency)
+/// MF7:  Mertens |M(n)| ≤ √n for n ≤ 10000 (RIEMANN HYPOTHESIS fragment)
+/// MF8:  BSD: E(F_997) point count with Hasse bound (BSD CONJECTURE fragment)
+/// MF9:  Legendre: prime between n² and (n+1)² for n ≤ 500
+/// MF10: Erdős–Straus: 4/n = 1/x+1/y+1/z for n ∈ [2, 1000]
+/// MF11: Weak Goldbach: every odd n in [7, 1001] is sum of 3 primes (Helfgott)
+/// MF12: Bertrand: prime between n and 2n for n ≤ 1000 (Chebyshev)
+/// MF13: Lagrange: every n in [1, 500] is sum of 4 squares
+fn build_millennium_finite_contracts() -> Vec<Contract> {
+    let specs = vec![
+        // MF0: Goldbach
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF0: Goldbach verified for even n in [4, 1000]",
+            "problem_id": "goldbach",
+            "parameter_n": 1000
+        }"#,
+        // MF1: Collatz
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF1: Collatz verified for n in [1, 5000]",
+            "problem_id": "collatz",
+            "parameter_n": 5000,
+            "parameter_aux": 1000
+        }"#,
+        // MF2: Twin primes
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF2: Twin primes exist in [2, 10000]",
+            "problem_id": "twin_primes",
+            "parameter_n": 10000
+        }"#,
+        // MF3: FLT small cases (max_exp=7 in parameter_n, max_base=40 in parameter_aux)
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF3: FLT verified for n in [3,7], a,b,c in [1,40]",
+            "problem_id": "flt",
+            "parameter_n": 7,
+            "parameter_aux": 40
+        }"#,
+        // MF4: Odd perfect numbers
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF4: No odd perfect number in [1, 5000]",
+            "problem_id": "odd_perfect",
+            "parameter_n": 5000
+        }"#,
+        // MF5: Mersenne primes
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF5: Mersenne prime exists (p in [2, 31])",
+            "problem_id": "mersenne",
+            "parameter_n": 31
+        }"#,
+        // MF6: ZFC 0≠1
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF6: 0 != 1 (ZFC consistency)",
+            "problem_id": "zfc_zero_ne_one",
+            "parameter_n": 0
+        }"#,
+        // ─── Clay Millennium Prize Problem Fragments ───
+        // MF7: Riemann Hypothesis — Mertens function bound
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF7: Mertens |M(n)| ≤ √n for n ≤ 10000 (Riemann Hypothesis fragment)",
+            "problem_id": "mertens",
+            "parameter_n": 10000
+        }"#,
+        // MF8: BSD Conjecture — Elliptic curve point count
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF8: BSD E: y²=x³-x over F_997, Hasse bound verified",
+            "problem_id": "bsd_ec_count",
+            "parameter_n": 997,
+            "parameter_aux": 0
+        }"#,
+        // ─── Major Open Problems ───
+        // MF9: Legendre's conjecture
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF9: Legendre: prime between n² and (n+1)² for n ≤ 500",
+            "problem_id": "legendre",
+            "parameter_n": 500
+        }"#,
+        // MF10: Erdős–Straus conjecture
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF10: Erdős–Straus: 4/n = 1/x+1/y+1/z for n in [2, 1000]",
+            "problem_id": "erdos_straus",
+            "parameter_n": 1000
+        }"#,
+        // MF11: Weak Goldbach (proved by Helfgott 2013)
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF11: Weak Goldbach: every odd n in [7, 1001] is sum of 3 primes",
+            "problem_id": "weak_goldbach",
+            "parameter_n": 1001
+        }"#,
+        // ─── Classical Theorems (Finite Verification) ───
+        // MF12: Bertrand's postulate (Chebyshev 1852)
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF12: Bertrand: prime between n and 2n for n ≤ 1000",
+            "problem_id": "bertrand",
+            "parameter_n": 1000
+        }"#,
+        // MF13: Lagrange's four-square theorem (1770)
+        r#"{
+            "type": "millennium_finite",
+            "description": "MF13: Lagrange: every n in [1, 500] is sum of 4 squares",
+            "problem_id": "lagrange_four_squares",
+            "parameter_n": 500
+        }"#,
+    ];
+
+    specs.iter()
+        .map(|s| compile_contract(s).expect("Millennium finite contract must compile"))
         .collect()
 }
