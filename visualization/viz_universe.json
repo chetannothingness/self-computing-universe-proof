@@ -1,0 +1,2830 @@
+{
+  "arith_witnesses": [
+    {
+      "contract_hash": [
+        188,
+        44,
+        235,
+        32,
+        200,
+        245,
+        178,
+        77,
+        137,
+        105,
+        45,
+        45,
+        177,
+        154,
+        62,
+        3,
+        113,
+        11,
+        52,
+        139,
+        4,
+        223,
+        50,
+        130,
+        61,
+        69,
+        101,
+        113,
+        171,
+        140,
+        250,
+        132
+      ],
+      "decoy_orbit": {
+        "den": 2,
+        "num": 11
+      },
+      "decoy_valid": true,
+      "parent_star_name": "KS-bc2ceb20",
+      "period_exact": {
+        "den": 1,
+        "num": 5
+      },
+      "qid_hex": "bc2ceb20c8f5b24d89692d2db19a3e03710b348b04df32823d456571ab8cfa84",
+      "witness_value": 5
+    },
+    {
+      "contract_hash": [
+        255,
+        106,
+        156,
+        28,
+        42,
+        159,
+        231,
+        153,
+        141,
+        95,
+        148,
+        118,
+        45,
+        78,
+        34,
+        222,
+        141,
+        73,
+        240,
+        104,
+        238,
+        17,
+        102,
+        99,
+        107,
+        126,
+        0,
+        130,
+        195,
+        84,
+        182,
+        166
+      ],
+      "decoy_orbit": {
+        "den": 2,
+        "num": 5
+      },
+      "decoy_valid": true,
+      "parent_star_name": "KS-ff6a9c1c",
+      "period_exact": {
+        "den": 1,
+        "num": 2
+      },
+      "qid_hex": "ff6a9c1c2a9fe7998d5f94762d4e22de8d49f068ee1166636b7e0082c354b6a6",
+      "witness_value": 2
+    },
+    {
+      "contract_hash": [
+        170,
+        183,
+        74,
+        16,
+        244,
+        60,
+        125,
+        72,
+        105,
+        27,
+        232,
+        194,
+        141,
+        80,
+        3,
+        2,
+        200,
+        37,
+        250,
+        203,
+        55,
+        246,
+        236,
+        192,
+        11,
+        117,
+        28,
+        79,
+        167,
+        17,
+        18,
+        2
+      ],
+      "decoy_orbit": {
+        "den": 2,
+        "num": 1
+      },
+      "decoy_valid": true,
+      "parent_star_name": "KS-aab74a10",
+      "period_exact": {
+        "den": 1,
+        "num": 0
+      },
+      "qid_hex": "aab74a10f43c7d48691be8c28d500302c825facb37f6ecc00b751c4fa7111202",
+      "witness_value": 0
+    }
+  ],
+  "atlas": {
+    "center_x": 2003129790464117151,
+    "center_y": -3009752122632710162,
+    "center_z": 6917614441135126459,
+    "domain_galaxies": [
+      {
+        "coord_x": 2003129790464117151,
+        "coord_y": -3009752122632710162,
+        "coord_z": 6917614441135126459,
+        "domain": "SAT",
+        "galaxy_name": "KAtlas-SAT",
+        "member_count": 7,
+        "radius_kpc": {
+          "den": 1,
+          "num": 70
+        }
+      },
+      {
+        "coord_x": 2003129790474117151,
+        "coord_y": -3009752122632710162,
+        "coord_z": 6917614441135126459,
+        "domain": "Arith",
+        "galaxy_name": "KAtlas-Arith",
+        "member_count": 6,
+        "radius_kpc": {
+          "den": 1,
+          "num": 60
+        }
+      },
+      {
+        "coord_x": 2003129790484117151,
+        "coord_y": -3009752122632710162,
+        "coord_z": 6917614441135126459,
+        "domain": "Table",
+        "galaxy_name": "KAtlas-Table",
+        "member_count": 4,
+        "radius_kpc": {
+          "den": 1,
+          "num": 40
+        }
+      },
+      {
+        "coord_x": 2003129790494117151,
+        "coord_y": -3009752122632710162,
+        "coord_z": 6917614441135126459,
+        "domain": "Formal",
+        "galaxy_name": "KAtlas-Formal",
+        "member_count": 3,
+        "radius_kpc": {
+          "den": 1,
+          "num": 30
+        }
+      },
+      {
+        "coord_x": 2003129790504117151,
+        "coord_y": -3009752122632710162,
+        "coord_z": 6917614441135126459,
+        "domain": "Dominate",
+        "galaxy_name": "KAtlas-Dominate",
+        "member_count": 3,
+        "radius_kpc": {
+          "den": 1,
+          "num": 30
+        }
+      },
+      {
+        "coord_x": 2003129790514117151,
+        "coord_y": -3009752122632710162,
+        "coord_z": 6917614441135126459,
+        "domain": "SpaceEngine",
+        "galaxy_name": "KAtlas-SpaceEngine",
+        "member_count": 3,
+        "radius_kpc": {
+          "den": 1,
+          "num": 30
+        }
+      }
+    ],
+    "filaments": [
+      {
+        "from_qid_hex": "0cbdb455cb3842b686151911b240dda8daf6ab914fc70f018c14f7b1ce406418",
+        "mid_x": -546411740048798048,
+        "mid_y": -1840616138974417817,
+        "mid_z": -834625764492037383,
+        "nebula_name": "KN-0cbdb455-33e0de64",
+        "radius_ly": {
+          "den": 1,
+          "num": 1164
+        },
+        "to_qid_hex": "33e0de640a4a933a47430f380d620c24186f748444d9c5e75636679f312096fc"
+      },
+      {
+        "from_qid_hex": "0cbdb455cb3842b686151911b240dda8daf6ab914fc70f018c14f7b1ce406418",
+        "mid_x": -1867129329525794683,
+        "mid_y": -1897144133705230996,
+        "mid_z": -1732162168255343705,
+        "nebula_name": "KN-0cbdb455-fdf31882",
+        "radius_ly": {
+          "den": 1,
+          "num": 826
+        },
+        "to_qid_hex": "fdf31882bd06eb155215786c3aba7a227330de550f78dcce7f1ec3dc43772595"
+      },
+      {
+        "from_qid_hex": "0e46ec16febfe079363a69ac0ce724b3f041d70de0c4056bdf8cb9a3d5982570",
+        "mid_x": 3790280340638463671,
+        "mid_y": 33949323011561851,
+        "mid_z": -863370145303806701,
+        "nebula_name": "KN-0e46ec16-61a7e196",
+        "radius_ly": {
+          "den": 1,
+          "num": 17062
+        },
+        "to_qid_hex": "61a7e196c8cf52efc0f886c86852cc4d353823a9fa9d037d2da610ae792fe872"
+      },
+      {
+        "from_qid_hex": "0e46ec16febfe079363a69ac0ce724b3f041d70de0c4056bdf8cb9a3d5982570",
+        "mid_x": -3795382693817324093,
+        "mid_y": -3263257130811161300,
+        "mid_z": 4339621679661170945,
+        "nebula_name": "KN-0e46ec16-7795c8e1",
+        "radius_ly": {
+          "den": 1,
+          "num": 18002
+        },
+        "to_qid_hex": "7795c8e11a6fc71c21d011face4248f21240bcb9f9186d0dcc99fd57fb72001a"
+      },
+      {
+        "from_qid_hex": "0e46ec16febfe079363a69ac0ce724b3f041d70de0c4056bdf8cb9a3d5982570",
+        "mid_x": 4311898308995429449,
+        "mid_y": 2076015816635601935,
+        "mid_z": 2436220999600213699,
+        "nebula_name": "KN-0e46ec16-8422a337",
+        "radius_ly": {
+          "den": 1,
+          "num": 1608
+        },
+        "to_qid_hex": "8422a3375721cdfde96de7f8b8137a8696db31c94e9f98d8b0eef6bd3b95d110"
+      },
+      {
+        "from_qid_hex": "0e46ec16febfe079363a69ac0ce724b3f041d70de0c4056bdf8cb9a3d5982570",
+        "mid_x": 374604651724195146,
+        "mid_y": 4500805502650354342,
+        "mid_z": -2294686796839687824,
+        "nebula_name": "KN-0e46ec16-86448943",
+        "radius_ly": {
+          "den": 1,
+          "num": 4828
+        },
+        "to_qid_hex": "86448943e6f9849016dbc89c773ec7c9f090572928804955e8d9bc6bf31fe06f"
+      },
+      {
+        "from_qid_hex": "0e46ec16febfe079363a69ac0ce724b3f041d70de0c4056bdf8cb9a3d5982570",
+        "mid_x": 4487427132432279635,
+        "mid_y": 2811347845931158539,
+        "mid_z": -2512080507689527584,
+        "nebula_name": "KN-0e46ec16-988a3a19",
+        "radius_ly": {
+          "den": 1,
+          "num": 12338
+        },
+        "to_qid_hex": "988a3a196956ac02e15d2955e4ece29ad0eb1fea4cd3404fdc683476174f31a5"
+      },
+      {
+        "from_qid_hex": "0e46ec16febfe079363a69ac0ce724b3f041d70de0c4056bdf8cb9a3d5982570",
+        "mid_x": -949886755848668813,
+        "mid_y": 951120619506150102,
+        "mid_z": -1658614885269103203,
+        "nebula_name": "KN-0e46ec16-d82ca962",
+        "radius_ly": {
+          "den": 1,
+          "num": 6779
+        },
+        "to_qid_hex": "d82ca96210e6c16b771b04644737416749f9e0523910f166e498de35cf07e28d"
+      },
+      {
+        "from_qid_hex": "10c25f6302cf8da5969b0d0aa5d6a85d03b05b5285f58cda8ee198967fdfa7d2",
+        "mid_x": -2265217441001539423,
+        "mid_y": -3967008407829378069,
+        "mid_z": 4558743116315599233,
+        "nebula_name": "KN-10c25f63-312fcb00",
+        "radius_ly": {
+          "den": 1,
+          "num": 15421
+        },
+        "to_qid_hex": "312fcb0078da921b407ca10219df3b34ff9223bae6dbfaa3c7e3e85df08170bf"
+      },
+      {
+        "from_qid_hex": "10c25f6302cf8da5969b0d0aa5d6a85d03b05b5285f58cda8ee198967fdfa7d2",
+        "mid_x": -695636841640852896,
+        "mid_y": -1802378542110521645,
+        "mid_z": -3705614187302247065,
+        "nebula_name": "KN-10c25f63-b042456f",
+        "radius_ly": {
+          "den": 1,
+          "num": 10161
+        },
+        "to_qid_hex": "b042456ff26423470ff260d3e27d5070ca9a0bf4891199be81701f5500d507d1"
+      },
+      {
+        "from_qid_hex": "26c61e61b858ed46c558f747e19863d56688f6541475a370f64c1195ab1639e6",
+        "mid_x": -1026659475427123657,
+        "mid_y": 2245306779875547000,
+        "mid_z": -4323377435340172543,
+        "nebula_name": "KN-26c61e61-4776a2aa",
+        "radius_ly": {
+          "den": 1,
+          "num": 1973
+        },
+        "to_qid_hex": "4776a2aa92cc939c2cd68c3c5c44ee689b9d419c2d195d175283e42300fbb18a"
+      },
+      {
+        "from_qid_hex": "26c61e61b858ed46c558f747e19863d56688f6541475a370f64c1195ab1639e6",
+        "mid_x": -1040075793233715743,
+        "mid_y": 1902116313835900658,
+        "mid_z": -3949246685221062482,
+        "nebula_name": "KN-26c61e61-9bf585d8",
+        "radius_ly": {
+          "den": 1,
+          "num": 1884
+        },
+        "to_qid_hex": "9bf585d86e78349c1fc55c078ac0675ff6680e550c75bf217078dc56cea24dd5"
+      },
+      {
+        "from_qid_hex": "26c61e61b858ed46c558f747e19863d56688f6541475a370f64c1195ab1639e6",
+        "mid_x": 2219515202113203438,
+        "mid_y": -916708590000313795,
+        "mid_z": 3896676870173303803,
+        "nebula_name": "KN-26c61e61-b713f4d5",
+        "radius_ly": {
+          "den": 1,
+          "num": 82
+        },
+        "to_qid_hex": "b713f4d5e941adf6b57bff9ce8cb2a1190bf5b41db1884fb15684ea5bdc81b64"
+      },
+      {
+        "from_qid_hex": "312fcb0078da921b407ca10219df3b34ff9223bae6dbfaa3c7e3e85df08170bf",
+        "mid_x": 3556471193928743152,
+        "mid_y": -3294894959026424024,
+        "mid_z": 3551641052753925860,
+        "nebula_name": "KN-312fcb00-b042456f",
+        "radius_ly": {
+          "den": 1,
+          "num": 9386
+        },
+        "to_qid_hex": "b042456ff26423470ff260d3e27d5070ca9a0bf4891199be81701f5500d507d1"
+      },
+      {
+        "from_qid_hex": "33e0de640a4a933a47430f380d620c24186f748444d9c5e75636679f312096fc",
+        "mid_x": 2900081094801746456,
+        "mid_y": 2541030899269741644,
+        "mid_z": -2643286795996278842,
+        "nebula_name": "KN-33e0de64-fdf31882",
+        "radius_ly": {
+          "den": 1,
+          "num": 4549
+        },
+        "to_qid_hex": "fdf31882bd06eb155215786c3aba7a227330de550f78dcce7f1ec3dc43772595"
+      },
+      {
+        "from_qid_hex": "40f0765ac2e3ae38b4f1360bf3edcf288f99d0856969501f4ea02052e5c96dbe",
+        "mid_x": -1048607209517134511,
+        "mid_y": 2467668420245537014,
+        "mid_z": -3165031150129386051,
+        "nebula_name": "KN-40f0765a-61aa2b95",
+        "radius_ly": {
+          "den": 1,
+          "num": 16730
+        },
+        "to_qid_hex": "61aa2b95d64e36aa3990272dc2e8ad1bea412bbd76b0d68836a7d850b20ac11d"
+      },
+      {
+        "from_qid_hex": "40f0765ac2e3ae38b4f1360bf3edcf288f99d0856969501f4ea02052e5c96dbe",
+        "mid_x": -4569446787997182987,
+        "mid_y": 1542939446306899598,
+        "mid_z": -1144283944583864404,
+        "nebula_name": "KN-40f0765a-aab74a10",
+        "radius_ly": {
+          "den": 1,
+          "num": 10736
+        },
+        "to_qid_hex": "aab74a10f43c7d48691be8c28d500302c825facb37f6ecc00b751c4fa7111202"
+      },
+      {
+        "from_qid_hex": "40f0765ac2e3ae38b4f1360bf3edcf288f99d0856969501f4ea02052e5c96dbe",
+        "mid_x": 245109784724592502,
+        "mid_y": 798961573900190377,
+        "mid_z": 2897841123670769201,
+        "nebula_name": "KN-40f0765a-adbe7f88",
+        "radius_ly": {
+          "den": 1,
+          "num": 13245
+        },
+        "to_qid_hex": "adbe7f8857b81ece9e13cdf7af085dedd3e2038ae2fc1d31f25fbceb2e4ffacb"
+      },
+      {
+        "from_qid_hex": "40f0765ac2e3ae38b4f1360bf3edcf288f99d0856969501f4ea02052e5c96dbe",
+        "mid_x": -4381742105543766402,
+        "mid_y": 1587312513122446750,
+        "mid_z": -3404259287042469248,
+        "nebula_name": "KN-40f0765a-bc2ceb20",
+        "radius_ly": {
+          "den": 1,
+          "num": 11346
+        },
+        "to_qid_hex": "bc2ceb20c8f5b24d89692d2db19a3e03710b348b04df32823d456571ab8cfa84"
+      },
+      {
+        "from_qid_hex": "40f0765ac2e3ae38b4f1360bf3edcf288f99d0856969501f4ea02052e5c96dbe",
+        "mid_x": -1636142063558218336,
+        "mid_y": 250264309452875936,
+        "mid_z": -4513946392709795442,
+        "nebula_name": "KN-40f0765a-ff6a9c1c",
+        "radius_ly": {
+          "den": 1,
+          "num": 17292
+        },
+        "to_qid_hex": "ff6a9c1c2a9fe7998d5f94762d4e22de8d49f068ee1166636b7e0082c354b6a6"
+      },
+      {
+        "from_qid_hex": "4776a2aa92cc939c2cd68c3c5c44ee689b9d419c2d195d175283e42300fbb18a",
+        "mid_x": 2045798067131921905,
+        "mid_y": -2005506515549237850,
+        "mid_z": 2057660269511312200,
+        "nebula_name": "KN-4776a2aa-9bf585d8",
+        "radius_ly": {
+          "den": 1,
+          "num": 1461
+        },
+        "to_qid_hex": "9bf585d86e78349c1fc55c078ac0675ff6680e550c75bf217078dc56cea24dd5"
+      },
+      {
+        "from_qid_hex": "4776a2aa92cc939c2cd68c3c5c44ee689b9d419c2d195d175283e42300fbb18a",
+        "mid_x": -3917982974375934721,
+        "mid_y": 4399040617469323504,
+        "mid_z": 680211788050902677,
+        "nebula_name": "KN-4776a2aa-b713f4d5",
+        "radius_ly": {
+          "den": 1,
+          "num": 14823
+        },
+        "to_qid_hex": "b713f4d5e941adf6b57bff9ce8cb2a1190bf5b41db1884fb15684ea5bdc81b64"
+      },
+      {
+        "from_qid_hex": "61a7e196c8cf52efc0f886c86852cc4d353823a9fa9d037d2da610ae792fe872",
+        "mid_x": 436039312276266604,
+        "mid_y": 2308739792341066864,
+        "mid_z": -4235534869168407516,
+        "nebula_name": "KN-61a7e196-7795c8e1",
+        "radius_ly": {
+          "den": 1,
+          "num": 17910
+        },
+        "to_qid_hex": "7795c8e11a6fc71c21d011face4248f21240bcb9f9186d0dcc99fd57fb72001a"
+      },
+      {
+        "from_qid_hex": "61a7e196c8cf52efc0f886c86852cc4d353823a9fa9d037d2da610ae792fe872",
+        "mid_x": -680051721765755661,
+        "mid_y": -1575359297066945707,
+        "mid_z": 3084436487625411045,
+        "nebula_name": "KN-61a7e196-8422a337",
+        "radius_ly": {
+          "den": 1,
+          "num": 11726
+        },
+        "to_qid_hex": "8422a3375721cdfde96de7f8b8137a8696db31c94e9f98d8b0eef6bd3b95d110"
+      },
+      {
+        "from_qid_hex": "61a7e196c8cf52efc0f886c86852cc4d353823a9fa9d037d2da610ae792fe872",
+        "mid_x": 4606026657817785843,
+        "mid_y": 849430388947806699,
+        "mid_z": -1646471308814490477,
+        "nebula_name": "KN-61a7e196-86448943",
+        "radius_ly": {
+          "den": 1,
+          "num": 180
+        },
+        "to_qid_hex": "86448943e6f9849016dbc89c773ec7c9f090572928804955e8d9bc6bf31fe06f"
+      },
+      {
+        "from_qid_hex": "61a7e196c8cf52efc0f886c86852cc4d353823a9fa9d037d2da610ae792fe872",
+        "mid_x": -504522898328905475,
+        "mid_y": -840027267771389103,
+        "mid_z": -1863865019664330237,
+        "nebula_name": "KN-61a7e196-988a3a19",
+        "radius_ly": {
+          "den": 1,
+          "num": 10246
+        },
+        "to_qid_hex": "988a3a196956ac02e15d2955e4ece29ad0eb1fea4cd3404fdc683476174f31a5"
+      },
+      {
+        "from_qid_hex": "61a7e196c8cf52efc0f886c86852cc4d353823a9fa9d037d2da610ae792fe872",
+        "mid_x": 3281535250244921884,
+        "mid_y": -2700254494196397540,
+        "mid_z": -1010399397243905857,
+        "nebula_name": "KN-61a7e196-d82ca962",
+        "radius_ly": {
+          "den": 1,
+          "num": 12391
+        },
+        "to_qid_hex": "d82ca96210e6c16b771b04644737416749f9e0523910f166e498de35cf07e28d"
+      },
+      {
+        "from_qid_hex": "61aa2b95d64e36aa3990272dc2e8ad1bea412bbd76b0d68836a7d850b20ac11d",
+        "mid_x": -479134296612065018,
+        "mid_y": 1069777156735227345,
+        "mid_z": 2657637626891383769,
+        "nebula_name": "KN-61aa2b95-aab74a10",
+        "radius_ly": {
+          "den": 1,
+          "num": 12932
+        },
+        "to_qid_hex": "aab74a10f43c7d48691be8c28d500302c825facb37f6ecc00b751c4fa7111202"
+      },
+      {
+        "from_qid_hex": "61aa2b95d64e36aa3990272dc2e8ad1bea412bbd76b0d68836a7d850b20ac11d",
+        "mid_x": 4335422276109710471,
+        "mid_y": 325799284328518123,
+        "mid_z": -2523609341708758433,
+        "nebula_name": "KN-61aa2b95-adbe7f88",
+        "radius_ly": {
+          "den": 1,
+          "num": 12245
+        },
+        "to_qid_hex": "adbe7f8857b81ece9e13cdf7af085dedd3e2038ae2fc1d31f25fbceb2e4ffacb"
+      },
+      {
+        "from_qid_hex": "61aa2b95d64e36aa3990272dc2e8ad1bea412bbd76b0d68836a7d850b20ac11d",
+        "mid_x": -291429614158648433,
+        "mid_y": 1114150223550774497,
+        "mid_z": 397662284432778925,
+        "nebula_name": "KN-61aa2b95-bc2ceb20",
+        "radius_ly": {
+          "den": 1,
+          "num": 8905
+        },
+        "to_qid_hex": "bc2ceb20c8f5b24d89692d2db19a3e03710b348b04df32823d456571ab8cfa84"
+      },
+      {
+        "from_qid_hex": "61aa2b95d64e36aa3990272dc2e8ad1bea412bbd76b0d68836a7d850b20ac11d",
+        "mid_x": 2454170427826899632,
+        "mid_y": -222897980118796317,
+        "mid_z": -712024821234547268,
+        "nebula_name": "KN-61aa2b95-ff6a9c1c",
+        "radius_ly": {
+          "den": 1,
+          "num": 8307
+        },
+        "to_qid_hex": "ff6a9c1c2a9fe7998d5f94762d4e22de8d49f068ee1166636b7e0082c354b6a6"
+      },
+      {
+        "from_qid_hex": "7795c8e11a6fc71c21d011face4248f21240bcb9f9186d0dcc99fd57fb72001a",
+        "mid_x": 957657280633232381,
+        "mid_y": 4350806285965106949,
+        "mid_z": -935943724264387116,
+        "nebula_name": "KN-7795c8e1-8422a337",
+        "radius_ly": {
+          "den": 1,
+          "num": 13807
+        },
+        "to_qid_hex": "8422a3375721cdfde96de7f8b8137a8696db31c94e9f98d8b0eef6bd3b95d110"
+      },
+      {
+        "from_qid_hex": "7795c8e11a6fc71c21d011face4248f21240bcb9f9186d0dcc99fd57fb72001a",
+        "mid_x": -2979636376638001921,
+        "mid_y": -2447776064874916452,
+        "mid_z": 3556520516150487169,
+        "nebula_name": "KN-7795c8e1-86448943",
+        "radius_ly": {
+          "den": 1,
+          "num": 16436
+        },
+        "to_qid_hex": "86448943e6f9849016dbc89c773ec7c9f090572928804955e8d9bc6bf31fe06f"
+      },
+      {
+        "from_qid_hex": "7795c8e11a6fc71c21d011face4248f21240bcb9f9186d0dcc99fd57fb72001a",
+        "mid_x": 1133186104070082567,
+        "mid_y": -4137233721594112255,
+        "mid_z": 3339126805300647409,
+        "nebula_name": "KN-7795c8e1-988a3a19",
+        "radius_ly": {
+          "den": 1,
+          "num": 12921
+        },
+        "to_qid_hex": "988a3a196956ac02e15d2955e4ece29ad0eb1fea4cd3404fdc683476174f31a5"
+      },
+      {
+        "from_qid_hex": "7795c8e11a6fc71c21d011face4248f21240bcb9f9186d0dcc99fd57fb72001a",
+        "mid_x": -4304127784210865880,
+        "mid_y": 3225911088835655116,
+        "mid_z": 4192592427721071789,
+        "nebula_name": "KN-7795c8e1-d82ca962",
+        "radius_ly": {
+          "den": 1,
+          "num": 2123
+        },
+        "to_qid_hex": "d82ca96210e6c16b771b04644737416749f9e0523910f166e498de35cf07e28d"
+      },
+      {
+        "from_qid_hex": "8422a3375721cdfde96de7f8b8137a8696db31c94e9f98d8b0eef6bd3b95d110",
+        "mid_x": -4095727410680024187,
+        "mid_y": 2891496882571846783,
+        "mid_z": 1653119836089529923,
+        "nebula_name": "KN-8422a337-86448943",
+        "radius_ly": {
+          "den": 1,
+          "num": 3262
+        },
+        "to_qid_hex": "86448943e6f9849016dbc89c773ec7c9f090572928804955e8d9bc6bf31fe06f"
+      },
+      {
+        "from_qid_hex": "8422a3375721cdfde96de7f8b8137a8696db31c94e9f98d8b0eef6bd3b95d110",
+        "mid_x": 17095070028060302,
+        "mid_y": 1202039225852650981,
+        "mid_z": 1435726125239690163,
+        "nebula_name": "KN-8422a337-988a3a19",
+        "radius_ly": {
+          "den": 1,
+          "num": 10371
+        },
+        "to_qid_hex": "988a3a196956ac02e15d2955e4ece29ad0eb1fea4cd3404fdc683476174f31a5"
+      },
+      {
+        "from_qid_hex": "8422a3375721cdfde96de7f8b8137a8696db31c94e9f98d8b0eef6bd3b95d110",
+        "mid_x": 3803153218601887662,
+        "mid_y": -658188000572357456,
+        "mid_z": 2289191747660114543,
+        "nebula_name": "KN-8422a337-d82ca962",
+        "radius_ly": {
+          "den": 1,
+          "num": 18362
+        },
+        "to_qid_hex": "d82ca96210e6c16b771b04644737416749f9e0523910f166e498de35cf07e28d"
+      },
+      {
+        "from_qid_hex": "86448943e6f9849016dbc89c773ec7c9f090572928804955e8d9bc6bf31fe06f",
+        "mid_x": -3920198587243174001,
+        "mid_y": 3626828911867403387,
+        "mid_z": -3295181671200211360,
+        "nebula_name": "KN-86448943-988a3a19",
+        "radius_ly": {
+          "den": 1,
+          "num": 12039
+        },
+        "to_qid_hex": "988a3a196956ac02e15d2955e4ece29ad0eb1fea4cd3404fdc683476174f31a5"
+      },
+      {
+        "from_qid_hex": "86448943e6f9849016dbc89c773ec7c9f090572928804955e8d9bc6bf31fe06f",
+        "mid_x": -134140438669346641,
+        "mid_y": 1766601685442394950,
+        "mid_z": -2441716048779786979,
+        "nebula_name": "KN-86448943-d82ca962",
+        "radius_ly": {
+          "den": 1,
+          "num": 11020
+        },
+        "to_qid_hex": "d82ca96210e6c16b771b04644737416749f9e0523910f166e498de35cf07e28d"
+      },
+      {
+        "from_qid_hex": "988a3a196956ac02e15d2955e4ece29ad0eb1fea4cd3404fdc683476174f31a5",
+        "mid_x": 3978682042038737848,
+        "mid_y": 77144028723199148,
+        "mid_z": -2659109759629626739,
+        "nebula_name": "KN-988a3a19-d82ca962",
+        "radius_ly": {
+          "den": 1,
+          "num": 12999
+        },
+        "to_qid_hex": "d82ca96210e6c16b771b04644737416749f9e0523910f166e498de35cf07e28d"
+      },
+      {
+        "from_qid_hex": "9bf585d86e78349c1fc55c078ac0675ff6680e550c75bf217078dc56cea24dd5",
+        "mid_x": -3931399292182526807,
+        "mid_y": 4055850151429677162,
+        "mid_z": 1054342538170012739,
+        "nebula_name": "KN-9bf585d8-b713f4d5",
+        "radius_ly": {
+          "den": 1,
+          "num": 14911
+        },
+        "to_qid_hex": "b713f4d5e941adf6b57bff9ce8cb2a1190bf5b41db1884fb15684ea5bdc81b64"
+      },
+      {
+        "from_qid_hex": "a4fc8b4a612bd178f4f5cc5cb28de671769ffbec7a86d2626ff0eff0ac8c0092",
+        "mid_x": -1560872136843018715,
+        "mid_y": -1477569879515052140,
+        "mid_z": -4172648429437531823,
+        "nebula_name": "KN-a4fc8b4a-a57fc924",
+        "radius_ly": {
+          "den": 1,
+          "num": 7150
+        },
+        "to_qid_hex": "a57fc924be2adc5b3399937459ae16652bf395f03d065d29d6a37795e2dc1768"
+      },
+      {
+        "from_qid_hex": "a4fc8b4a612bd178f4f5cc5cb28de671769ffbec7a86d2626ff0eff0ac8c0092",
+        "mid_x": 3824270721210305710,
+        "mid_y": -550036502134730370,
+        "mid_z": 161618610913616841,
+        "nebula_name": "KN-a4fc8b4a-b89cc9c2",
+        "radius_ly": {
+          "den": 1,
+          "num": 14143
+        },
+        "to_qid_hex": "b89cc9c289e853f108adb8fcbb33d57e1da8367c0fd8a9a11206bca01dc85231"
+      },
+      {
+        "from_qid_hex": "a57fc924be2adc5b3399937459ae16652bf395f03d065d29d6a37795e2dc1768",
+        "mid_x": 2780983369675673134,
+        "mid_y": -1011637512924945634,
+        "mid_z": -1908559605015360092,
+        "nebula_name": "KN-a57fc924-b89cc9c2",
+        "radius_ly": {
+          "den": 1,
+          "num": 18200
+        },
+        "to_qid_hex": "b89cc9c289e853f108adb8fcbb33d57e1da8367c0fd8a9a11206bca01dc85231"
+      },
+      {
+        "from_qid_hex": "aab74a10f43c7d48691be8c28d500302c825facb37f6ecc00b751c4fa7111202",
+        "mid_x": 814582697629661995,
+        "mid_y": -598929689610119292,
+        "mid_z": -502862136163236786,
+        "nebula_name": "KN-aab74a10-adbe7f88",
+        "radius_ly": {
+          "den": 1,
+          "num": 18389
+        },
+        "to_qid_hex": "adbe7f8857b81ece9e13cdf7af085dedd3e2038ae2fc1d31f25fbceb2e4ffacb"
+      },
+      {
+        "from_qid_hex": "aab74a10f43c7d48691be8c28d500302c825facb37f6ecc00b751c4fa7111202",
+        "mid_x": -3812269192638696909,
+        "mid_y": 189421249612137081,
+        "mid_z": 2418409489978300572,
+        "nebula_name": "KN-aab74a10-bc2ceb20",
+        "radius_ly": {
+          "den": 1,
+          "num": 4984
+        },
+        "to_qid_hex": "bc2ceb20c8f5b24d89692d2db19a3e03710b348b04df32823d456571ab8cfa84"
+      },
+      {
+        "from_qid_hex": "aab74a10f43c7d48691be8c28d500302c825facb37f6ecc00b751c4fa7111202",
+        "mid_x": -1066669150653148843,
+        "mid_y": -1147626954057433733,
+        "mid_z": 1308722384310974378,
+        "nebula_name": "KN-aab74a10-ff6a9c1c",
+        "radius_ly": {
+          "den": 1,
+          "num": 15191
+        },
+        "to_qid_hex": "ff6a9c1c2a9fe7998d5f94762d4e22de8d49f068ee1166636b7e0082c354b6a6"
+      },
+      {
+        "from_qid_hex": "adbe7f8857b81ece9e13cdf7af085dedd3e2038ae2fc1d31f25fbceb2e4ffacb",
+        "mid_x": 1002287380083078580,
+        "mid_y": -554556622794572140,
+        "mid_z": -2762837478621841630,
+        "nebula_name": "KN-adbe7f88-bc2ceb20",
+        "radius_ly": {
+          "den": 1,
+          "num": 16612
+        },
+        "to_qid_hex": "bc2ceb20c8f5b24d89692d2db19a3e03710b348b04df32823d456571ab8cfa84"
+      },
+      {
+        "from_qid_hex": "adbe7f8857b81ece9e13cdf7af085dedd3e2038ae2fc1d31f25fbceb2e4ffacb",
+        "mid_x": 3747887422068626646,
+        "mid_y": -1891604826464142954,
+        "mid_z": -3872524584289167824,
+        "nebula_name": "KN-adbe7f88-ff6a9c1c",
+        "radius_ly": {
+          "den": 1,
+          "num": 8483
+        },
+        "to_qid_hex": "ff6a9c1c2a9fe7998d5f94762d4e22de8d49f068ee1166636b7e0082c354b6a6"
+      },
+      {
+        "from_qid_hex": "bc2ceb20c8f5b24d89692d2db19a3e03710b348b04df32823d456571ab8cfa84",
+        "mid_x": -878964468199732258,
+        "mid_y": -1103253887241886581,
+        "mid_z": -951252958147630465,
+        "nebula_name": "KN-bc2ceb20-ff6a9c1c",
+        "radius_ly": {
+          "den": 1,
+          "num": 10384
+        },
+        "to_qid_hex": "ff6a9c1c2a9fe7998d5f94762d4e22de8d49f068ee1166636b7e0082c354b6a6"
+      }
+    ],
+    "frontiers": [
+      {
+        "coord_x": -6517325476571135472,
+        "coord_y": 6748880045941300118,
+        "coord_z": -2698512123740573693,
+        "cost": 1000000,
+        "event_horizon_milli_ly": 1000,
+        "name": "KBH-10c25f63",
+        "qid_hex": "10c25f6302cf8da5969b0d0aa5d6a85d03b05b5285f58cda8ee198967fdfa7d2"
+      },
+      {
+        "coord_x": 1986890594568056625,
+        "coord_y": 3763847212109495360,
+        "coord_z": -6630745717337779457,
+        "cost": 1000000,
+        "event_horizon_milli_ly": 1000,
+        "name": "KBH-312fcb00",
+        "qid_hex": "312fcb0078da921b407ca10219df3b34ff9223bae6dbfaa3c7e3e85df08170bf"
+      },
+      {
+        "coord_x": 5126051793289429680,
+        "coord_y": 8093106943547208207,
+        "coord_z": -4712716250863920438,
+        "cost": 1000000,
+        "event_horizon_milli_ly": 1000,
+        "name": "KBH-b042456f",
+        "qid_hex": "b042456ff26423470ff260d3e27d5070ca9a0bf4891199be81701f5500d507d1"
+      }
+    ],
+    "index_stars": [
+      {
+        "coord_x": 8782230371399648782,
+        "coord_y": -5538047600140666314,
+        "coord_z": 7711786403525771760,
+        "domain": "SAT",
+        "qid_hex": "0e46ec16febfe079363a69ac0ce724b3f041d70de0c4056bdf8cb9a3d5982570",
+        "target_object_name": "KG-0e46ec16"
+      },
+      {
+        "coord_x": 2073748314675254647,
+        "coord_y": -988466661481656287,
+        "coord_z": 967456955796570130,
+        "domain": "SAT",
+        "qid_hex": "7795c8e11a6fc71c21d011face4248f21240bcb9f9186d0dcc99fd57fb72001a",
+        "target_object_name": "KG-7795c8e1"
+      },
+      {
+        "coord_x": -1201669690122721439,
+        "coord_y": 5605946246163790016,
+        "coord_z": 9008217379576166453,
+        "domain": "SAT",
+        "qid_hex": "61a7e196c8cf52efc0f886c86852cc4d353823a9fa9d037d2da610ae792fe872",
+        "target_object_name": "KG-61a7e196"
+      },
+      {
+        "coord_x": 7764740190612565208,
+        "coord_y": 7440288839152966519,
+        "coord_z": 7417727899645573449,
+        "domain": "SAT",
+        "qid_hex": "d82ca96210e6c16b771b04644737416749f9e0523910f166e498de35cf07e28d",
+        "target_object_name": "KG-d82ca962"
+      },
+      {
+        "coord_x": -8033021067951258490,
+        "coord_y": -3907085468268176618,
+        "coord_z": 6145584076504404208,
+        "domain": "SAT",
+        "qid_hex": "86448943e6f9849016dbc89c773ec7c9f090572928804955e8d9bc6bf31fe06f",
+        "target_object_name": "KG-86448943"
+      },
+      {
+        "coord_x": -158433753408789884,
+        "coord_y": -8756664840297681431,
+        "coord_z": -2839344404325344362,
+        "domain": "SAT",
+        "qid_hex": "8422a3375721cdfde96de7f8b8137a8696db31c94e9f98d8b0eef6bd3b95d110",
+        "target_object_name": "KG-8422a337"
+      },
+      {
+        "coord_x": 192623893464910488,
+        "coord_y": -7286000781706568223,
+        "coord_z": 5710796654804724688,
+        "domain": "SAT",
+        "qid_hex": "988a3a196956ac02e15d2955e4ece29ad0eb1fea4cd3404fdc683476174f31a5",
+        "target_object_name": "KG-988a3a19"
+      },
+      {
+        "coord_x": 5598807526669495484,
+        "coord_y": 233794316427684233,
+        "coord_z": -9064937889335080079,
+        "domain": "Arith",
+        "qid_hex": "bc2ceb20c8f5b24d89692d2db19a3e03710b348b04df32823d456571ab8cfa84",
+        "target_object_name": "KS-bc2ceb20"
+      },
+      {
+        "coord_x": 4084452335952523328,
+        "coord_y": 2940830709817209268,
+        "coord_z": 2256419315250141583,
+        "domain": "Arith",
+        "qid_hex": "40f0765ac2e3ae38b4f1360bf3edcf288f99d0856969501f4ea02052e5c96dbe",
+        "target_object_name": "KS-40f0765a"
+      },
+      {
+        "coord_x": -7356736463068960001,
+        "coord_y": -2440302090911457395,
+        "coord_z": 7162431973039819149,
+        "domain": "Arith",
+        "qid_hex": "ff6a9c1c2a9fe7998d5f94762d4e22de8d49f068ee1166636b7e0082c354b6a6",
+        "target_object_name": "KS-ff6a9c1c"
+      },
+      {
+        "coord_x": 5223398161762662314,
+        "coord_y": 145048182796589929,
+        "coord_z": -4544987204417870392,
+        "domain": "Arith",
+        "qid_hex": "aab74a10f43c7d48691be8c28d500302c825facb37f6ecc00b751c4fa7111202",
+        "target_object_name": "KS-aab74a10"
+      },
+      {
+        "coord_x": -6181666754986792351,
+        "coord_y": 1994506130673864761,
+        "coord_z": -8586481615508913686,
+        "domain": "Arith",
+        "qid_hex": "61aa2b95d64e36aa3990272dc2e8ad1bea412bbd76b0d68836a7d850b20ac11d",
+        "target_object_name": "KS-61aa2b95"
+      },
+      {
+        "coord_x": -3594232766503338323,
+        "coord_y": -1342907562016828514,
+        "coord_z": 3539262932091396819,
+        "domain": "Arith",
+        "qid_hex": "adbe7f8857b81ece9e13cdf7af085dedd3e2038ae2fc1d31f25fbceb2e4ffacb",
+        "target_object_name": "KS-adbe7f88"
+      },
+      {
+        "coord_x": 5110838701062014502,
+        "coord_y": -3070442427594090299,
+        "coord_z": 8116459683637004390,
+        "domain": "Table",
+        "qid_hex": "26c61e61b858ed46c558f747e19863d56688f6541475a370f64c1195ab1639e6",
+        "target_object_name": "KN-26c61e61"
+      },
+      {
+        "coord_x": -7164157651916261817,
+        "coord_y": 7561055987345184300,
+        "coord_z": 1683529519392202139,
+        "domain": "Table",
+        "qid_hex": "4776a2aa92cc939c2cd68c3c5c44ee689b9d419c2d195d175283e42300fbb18a",
+        "target_object_name": "KN-4776a2aa"
+      },
+      {
+        "coord_x": -7190990287529445989,
+        "coord_y": 6874675055265891615,
+        "coord_z": 2431791019630422262,
+        "domain": "Table",
+        "qid_hex": "9bf585d86e78349c1fc55c078ac0675ff6680e550c75bf217078dc56cea24dd5",
+        "target_object_name": "KN-9bf585d8"
+      },
+      {
+        "coord_x": -671808296835607625,
+        "coord_y": 1237025247593462709,
+        "coord_z": -323105943290396784,
+        "domain": "Table",
+        "qid_hex": "b713f4d5e941adf6b57bff9ce8cb2a1190bf5b41db1884fb15684ea5bdc81b64",
+        "target_object_name": "KN-b713f4d5"
+      },
+      {
+        "coord_x": -6517325476571135472,
+        "coord_y": 6748880045941300118,
+        "coord_z": -2698512123740573693,
+        "domain": "Formal",
+        "qid_hex": "10c25f6302cf8da5969b0d0aa5d6a85d03b05b5285f58cda8ee198967fdfa7d2",
+        "target_object_name": "KD-10c25f63"
+      },
+      {
+        "coord_x": 1986890594568056625,
+        "coord_y": 3763847212109495360,
+        "coord_z": -6630745717337779457,
+        "domain": "Formal",
+        "qid_hex": "312fcb0078da921b407ca10219df3b34ff9223bae6dbfaa3c7e3e85df08170bf",
+        "target_object_name": "KD-312fcb00"
+      },
+      {
+        "coord_x": 5126051793289429680,
+        "coord_y": 8093106943547208207,
+        "coord_z": -4712716250863920438,
+        "domain": "Formal",
+        "qid_hex": "b042456ff26423470ff260d3e27d5070ca9a0bf4891199be81701f5500d507d1",
+        "target_object_name": "KD-b042456f"
+      },
+      {
+        "coord_x": 1579363505324749821,
+        "coord_y": 2484502904538928466,
+        "coord_z": -3540823199759585165,
+        "domain": "Dominate",
+        "qid_hex": "fdf31882bd06eb155215786c3aba7a227330de550f78dcce7f1ec3dc43772595",
+        "target_object_name": "KC-fdf31882"
+      },
+      {
+        "coord_x": 4220798684278743091,
+        "coord_y": 2597558894000554823,
+        "coord_z": -1745750392232972520,
+        "domain": "Dominate",
+        "qid_hex": "33e0de640a4a933a47430f380d620c24186f748444d9c5e75636679f312096fc",
+        "target_object_name": "KC-33e0de64"
+      },
+      {
+        "coord_x": -5313622164376339188,
+        "coord_y": -6278791171949390458,
+        "coord_z": 76498863248897754,
+        "domain": "Dominate",
+        "qid_hex": "0cbdb455cb3842b686151911b240dda8daf6ab914fc70f018c14f7b1ce406418",
+        "target_object_name": "KC-0cbdb455"
+      },
+      {
+        "coord_x": -1057245809125778248,
+        "coord_y": 9139267901310151944,
+        "coord_z": -6797664601518987235,
+        "domain": "SpaceEngine",
+        "qid_hex": "b89cc9c289e853f108adb8fcbb33d57e1da8367c0fd8a9a11206bca01dc85231",
+        "target_object_name": "KSE-b89cc9c2"
+      },
+      {
+        "coord_x": 6619212548477124517,
+        "coord_y": 7284201146549508403,
+        "coord_z": 2980545391488267051,
+        "domain": "SpaceEngine",
+        "qid_hex": "a57fc924be2adc5b3399937459ae16652bf395f03d065d29d6a37795e2dc1768",
+        "target_object_name": "KSE-a57fc924"
+      },
+      {
+        "coord_x": 8705787251546389668,
+        "coord_y": 8207403168129938932,
+        "coord_z": 7120901823346220918,
+        "domain": "SpaceEngine",
+        "qid_hex": "a4fc8b4a612bd178f4f5cc5cb28de671769ffbec7a86d2626ff0eff0ac8c0092",
+        "target_object_name": "KSE-a4fc8b4a"
+      }
+    ]
+  },
+  "build_hash": "36b210d6f2581e885723d454f7398216c5016b54432647ff0c897753407c062e",
+  "catalog": {
+    "clusters": [
+      {
+        "contract_hash": [
+          253,
+          243,
+          24,
+          130,
+          189,
+          6,
+          235,
+          21,
+          82,
+          21,
+          120,
+          108,
+          58,
+          186,
+          122,
+          34,
+          115,
+          48,
+          222,
+          85,
+          15,
+          120,
+          220,
+          206,
+          127,
+          30,
+          195,
+          220,
+          67,
+          119,
+          37,
+          149
+        ],
+        "coord_x": 1579363505324749821,
+        "coord_y": 2484502904538928466,
+        "coord_z": -3540823199759585165,
+        "member_count": 100,
+        "name": "KC-fdf31882",
+        "qid_hex": "fdf31882bd06eb155215786c3aba7a227330de550f78dcce7f1ec3dc43772595",
+        "radius_pc": {
+          "den": 1,
+          "num": 5
+        }
+      },
+      {
+        "contract_hash": [
+          51,
+          224,
+          222,
+          100,
+          10,
+          74,
+          147,
+          58,
+          71,
+          67,
+          15,
+          56,
+          13,
+          98,
+          12,
+          36,
+          24,
+          111,
+          116,
+          132,
+          68,
+          217,
+          197,
+          231,
+          86,
+          54,
+          103,
+          159,
+          49,
+          32,
+          150,
+          252
+        ],
+        "coord_x": 4220798684278743091,
+        "coord_y": 2597558894000554823,
+        "coord_z": -1745750392232972520,
+        "member_count": 100,
+        "name": "KC-33e0de64",
+        "qid_hex": "33e0de640a4a933a47430f380d620c24186f748444d9c5e75636679f312096fc",
+        "radius_pc": {
+          "den": 1,
+          "num": 6
+        }
+      },
+      {
+        "contract_hash": [
+          12,
+          189,
+          180,
+          85,
+          203,
+          56,
+          66,
+          182,
+          134,
+          21,
+          25,
+          17,
+          178,
+          64,
+          221,
+          168,
+          218,
+          246,
+          171,
+          145,
+          79,
+          199,
+          15,
+          1,
+          140,
+          20,
+          247,
+          177,
+          206,
+          64,
+          100,
+          24
+        ],
+        "coord_x": -5313622164376339188,
+        "coord_y": -6278791171949390458,
+        "coord_z": 76498863248897754,
+        "member_count": 100,
+        "name": "KC-0cbdb455",
+        "qid_hex": "0cbdb455cb3842b686151911b240dda8daf6ab914fc70f018c14f7b1ce406418",
+        "radius_pc": {
+          "den": 1,
+          "num": 4
+        }
+      }
+    ],
+    "dark_objects": [
+      {
+        "contract_hash": [
+          16,
+          194,
+          95,
+          99,
+          2,
+          207,
+          141,
+          165,
+          150,
+          155,
+          13,
+          10,
+          165,
+          214,
+          168,
+          93,
+          3,
+          176,
+          91,
+          82,
+          133,
+          245,
+          140,
+          218,
+          142,
+          225,
+          152,
+          150,
+          127,
+          223,
+          167,
+          210
+        ],
+        "coord_x": -6517325476571135472,
+        "coord_y": 6748880045941300118,
+        "coord_z": -2698512123740573693,
+        "mass_estimate": {
+          "den": 1,
+          "num": 4611686018427387903
+        },
+        "name": "KD-10c25f63",
+        "qid_hex": "10c25f6302cf8da5969b0d0aa5d6a85d03b05b5285f58cda8ee198967fdfa7d2",
+        "reason_inadmissible": "P=NP or P≠NP"
+      },
+      {
+        "contract_hash": [
+          49,
+          47,
+          203,
+          0,
+          120,
+          218,
+          146,
+          27,
+          64,
+          124,
+          161,
+          2,
+          25,
+          223,
+          59,
+          52,
+          255,
+          146,
+          35,
+          186,
+          230,
+          219,
+          250,
+          163,
+          199,
+          227,
+          232,
+          93,
+          240,
+          129,
+          112,
+          191
+        ],
+        "coord_x": 1986890594568056625,
+        "coord_y": 3763847212109495360,
+        "coord_z": -6630745717337779457,
+        "mass_estimate": {
+          "den": 1,
+          "num": 4611686018427387903
+        },
+        "name": "KD-312fcb00",
+        "qid_hex": "312fcb0078da921b407ca10219df3b34ff9223bae6dbfaa3c7e3e85df08170bf",
+        "reason_inadmissible": "a^n+b^n≠c^n for n>2"
+      },
+      {
+        "contract_hash": [
+          176,
+          66,
+          69,
+          111,
+          242,
+          100,
+          35,
+          71,
+          15,
+          242,
+          96,
+          211,
+          226,
+          125,
+          80,
+          112,
+          202,
+          154,
+          11,
+          244,
+          137,
+          17,
+          153,
+          190,
+          129,
+          112,
+          31,
+          85,
+          0,
+          213,
+          7,
+          209
+        ],
+        "coord_x": 5126051793289429680,
+        "coord_y": 8093106943547208207,
+        "coord_z": -4712716250863920438,
+        "mass_estimate": {
+          "den": 1,
+          "num": 4611686018427387903
+        },
+        "name": "KD-b042456f",
+        "qid_hex": "b042456ff26423470ff260d3e27d5070ca9a0bf4891199be81701f5500d507d1",
+        "reason_inadmissible": "0=1"
+      }
+    ],
+    "galaxies": [
+      {
+        "arm_count": 2,
+        "contract_hash": [
+          14,
+          70,
+          236,
+          22,
+          254,
+          191,
+          224,
+          121,
+          54,
+          58,
+          105,
+          172,
+          12,
+          231,
+          36,
+          179,
+          240,
+          65,
+          215,
+          13,
+          224,
+          196,
+          5,
+          107,
+          223,
+          140,
+          185,
+          163,
+          213,
+          152,
+          37,
+          112
+        ],
+        "coord_x": 8782230371399648782,
+        "coord_y": -5538047600140666314,
+        "coord_z": 7711786403525771760,
+        "morphology": "Spiral",
+        "name": "KG-0e46ec16",
+        "qid_hex": "0e46ec16febfe079363a69ac0ce724b3f041d70de0c4056bdf8cb9a3d5982570",
+        "radius_kpc": {
+          "den": 10,
+          "num": 1
+        }
+      },
+      {
+        "arm_count": 2,
+        "contract_hash": [
+          119,
+          149,
+          200,
+          225,
+          26,
+          111,
+          199,
+          28,
+          33,
+          208,
+          17,
+          250,
+          206,
+          66,
+          72,
+          242,
+          18,
+          64,
+          188,
+          185,
+          249,
+          24,
+          109,
+          13,
+          204,
+          153,
+          253,
+          87,
+          251,
+          114,
+          0,
+          26
+        ],
+        "coord_x": 2073748314675254647,
+        "coord_y": -988466661481656287,
+        "coord_z": 967456955796570130,
+        "morphology": "Elliptical",
+        "name": "KG-7795c8e1",
+        "qid_hex": "7795c8e11a6fc71c21d011face4248f21240bcb9f9186d0dcc99fd57fb72001a",
+        "radius_kpc": {
+          "den": 5,
+          "num": 1
+        }
+      },
+      {
+        "arm_count": 2,
+        "contract_hash": [
+          97,
+          167,
+          225,
+          150,
+          200,
+          207,
+          82,
+          239,
+          192,
+          248,
+          134,
+          200,
+          104,
+          82,
+          204,
+          77,
+          53,
+          56,
+          35,
+          169,
+          250,
+          157,
+          3,
+          125,
+          45,
+          166,
+          16,
+          174,
+          121,
+          47,
+          232,
+          114
+        ],
+        "coord_x": -1201669690122721439,
+        "coord_y": 5605946246163790016,
+        "coord_z": 9008217379576166453,
+        "morphology": "Spiral",
+        "name": "KG-61a7e196",
+        "qid_hex": "61a7e196c8cf52efc0f886c86852cc4d353823a9fa9d037d2da610ae792fe872",
+        "radius_kpc": {
+          "den": 10,
+          "num": 1
+        }
+      },
+      {
+        "arm_count": 2,
+        "contract_hash": [
+          216,
+          44,
+          169,
+          98,
+          16,
+          230,
+          193,
+          107,
+          119,
+          27,
+          4,
+          100,
+          71,
+          55,
+          65,
+          103,
+          73,
+          249,
+          224,
+          82,
+          57,
+          16,
+          241,
+          102,
+          228,
+          152,
+          222,
+          53,
+          207,
+          7,
+          226,
+          141
+        ],
+        "coord_x": 7764740190612565208,
+        "coord_y": 7440288839152966519,
+        "coord_z": 7417727899645573449,
+        "morphology": "Spiral",
+        "name": "KG-d82ca962",
+        "qid_hex": "d82ca96210e6c16b771b04644737416749f9e0523910f166e498de35cf07e28d",
+        "radius_kpc": {
+          "den": 5,
+          "num": 1
+        }
+      },
+      {
+        "arm_count": 3,
+        "contract_hash": [
+          134,
+          68,
+          137,
+          67,
+          230,
+          249,
+          132,
+          144,
+          22,
+          219,
+          200,
+          156,
+          119,
+          62,
+          199,
+          201,
+          240,
+          144,
+          87,
+          41,
+          40,
+          128,
+          73,
+          85,
+          232,
+          217,
+          188,
+          107,
+          243,
+          31,
+          224,
+          111
+        ],
+        "coord_x": -8033021067951258490,
+        "coord_y": -3907085468268176618,
+        "coord_z": 6145584076504404208,
+        "morphology": "Spiral",
+        "name": "KG-86448943",
+        "qid_hex": "86448943e6f9849016dbc89c773ec7c9f090572928804955e8d9bc6bf31fe06f",
+        "radius_kpc": {
+          "den": 10,
+          "num": 1
+        }
+      },
+      {
+        "arm_count": 4,
+        "contract_hash": [
+          132,
+          34,
+          163,
+          55,
+          87,
+          33,
+          205,
+          253,
+          233,
+          109,
+          231,
+          248,
+          184,
+          19,
+          122,
+          134,
+          150,
+          219,
+          49,
+          201,
+          78,
+          159,
+          152,
+          216,
+          176,
+          238,
+          246,
+          189,
+          59,
+          149,
+          209,
+          16
+        ],
+        "coord_x": -158433753408789884,
+        "coord_y": -8756664840297681431,
+        "coord_z": -2839344404325344362,
+        "morphology": "Elliptical",
+        "name": "KG-8422a337",
+        "qid_hex": "8422a3375721cdfde96de7f8b8137a8696db31c94e9f98d8b0eef6bd3b95d110",
+        "radius_kpc": {
+          "den": 5,
+          "num": 4
+        }
+      },
+      {
+        "arm_count": 2,
+        "contract_hash": [
+          152,
+          138,
+          58,
+          25,
+          105,
+          86,
+          172,
+          2,
+          225,
+          93,
+          41,
+          85,
+          228,
+          236,
+          226,
+          154,
+          208,
+          235,
+          31,
+          234,
+          76,
+          211,
+          64,
+          79,
+          220,
+          104,
+          52,
+          118,
+          23,
+          79,
+          49,
+          165
+        ],
+        "coord_x": 192623893464910488,
+        "coord_y": -7286000781706568223,
+        "coord_z": 5710796654804724688,
+        "morphology": "Spiral",
+        "name": "KG-988a3a19",
+        "qid_hex": "988a3a196956ac02e15d2955e4ece29ad0eb1fea4cd3404fdc683476174f31a5",
+        "radius_kpc": {
+          "den": 1,
+          "num": 0
+        }
+      }
+    ],
+    "nebulae": [
+      {
+        "contract_hash": [
+          38,
+          198,
+          30,
+          97,
+          184,
+          88,
+          237,
+          70,
+          197,
+          88,
+          247,
+          71,
+          225,
+          152,
+          99,
+          213,
+          102,
+          136,
+          246,
+          84,
+          20,
+          117,
+          163,
+          112,
+          246,
+          76,
+          17,
+          149,
+          171,
+          22,
+          57,
+          230
+        ],
+        "coord_x": 5110838701062014502,
+        "coord_y": -3070442427594090299,
+        "coord_z": 8116459683637004390,
+        "density": {
+          "den": 2,
+          "num": 1
+        },
+        "name": "KN-26c61e61",
+        "qid_hex": "26c61e61b858ed46c558f747e19863d56688f6541475a370f64c1195ab1639e6",
+        "radius_ly": {
+          "den": 1,
+          "num": 2
+        }
+      },
+      {
+        "contract_hash": [
+          71,
+          118,
+          162,
+          170,
+          146,
+          204,
+          147,
+          156,
+          44,
+          214,
+          140,
+          60,
+          92,
+          68,
+          238,
+          104,
+          155,
+          157,
+          65,
+          156,
+          45,
+          25,
+          93,
+          23,
+          82,
+          131,
+          228,
+          35,
+          0,
+          251,
+          177,
+          138
+        ],
+        "coord_x": -7164157651916261817,
+        "coord_y": 7561055987345184300,
+        "coord_z": 1683529519392202139,
+        "density": {
+          "den": 2,
+          "num": 1
+        },
+        "name": "KN-4776a2aa",
+        "qid_hex": "4776a2aa92cc939c2cd68c3c5c44ee689b9d419c2d195d175283e42300fbb18a",
+        "radius_ly": {
+          "den": 1,
+          "num": 2
+        }
+      },
+      {
+        "contract_hash": [
+          155,
+          245,
+          133,
+          216,
+          110,
+          120,
+          52,
+          156,
+          31,
+          197,
+          92,
+          7,
+          138,
+          192,
+          103,
+          95,
+          246,
+          104,
+          14,
+          85,
+          12,
+          117,
+          191,
+          33,
+          112,
+          120,
+          220,
+          86,
+          206,
+          162,
+          77,
+          213
+        ],
+        "coord_x": -7190990287529445989,
+        "coord_y": 6874675055265891615,
+        "coord_z": 2431791019630422262,
+        "density": {
+          "den": 2,
+          "num": 1
+        },
+        "name": "KN-9bf585d8",
+        "qid_hex": "9bf585d86e78349c1fc55c078ac0675ff6680e550c75bf217078dc56cea24dd5",
+        "radius_ly": {
+          "den": 1,
+          "num": 2
+        }
+      },
+      {
+        "contract_hash": [
+          183,
+          19,
+          244,
+          213,
+          233,
+          65,
+          173,
+          246,
+          181,
+          123,
+          255,
+          156,
+          232,
+          203,
+          42,
+          17,
+          144,
+          191,
+          91,
+          65,
+          219,
+          24,
+          132,
+          251,
+          21,
+          104,
+          78,
+          165,
+          189,
+          200,
+          27,
+          100
+        ],
+        "coord_x": -671808296835607625,
+        "coord_y": 1237025247593462709,
+        "coord_z": -323105943290396784,
+        "density": {
+          "den": 1,
+          "num": 1
+        },
+        "name": "KN-b713f4d5",
+        "qid_hex": "b713f4d5e941adf6b57bff9ce8cb2a1190bf5b41db1884fb15684ea5bdc81b64",
+        "radius_ly": {
+          "den": 1,
+          "num": 0
+        }
+      }
+    ],
+    "stars": [
+      {
+        "contract_hash": [
+          188,
+          44,
+          235,
+          32,
+          200,
+          245,
+          178,
+          77,
+          137,
+          105,
+          45,
+          45,
+          177,
+          154,
+          62,
+          3,
+          113,
+          11,
+          52,
+          139,
+          4,
+          223,
+          50,
+          130,
+          61,
+          69,
+          101,
+          113,
+          171,
+          140,
+          250,
+          132
+        ],
+        "coord_x": 5598807526669495484,
+        "coord_y": 233794316427684233,
+        "coord_z": -9064937889335080079,
+        "luminosity": {
+          "den": 1,
+          "num": 0
+        },
+        "name": "KS-bc2ceb20",
+        "planet_orbits": [
+          {
+            "den": 1,
+            "num": 0
+          },
+          {
+            "den": 10,
+            "num": 1
+          }
+        ],
+        "qid_hex": "bc2ceb20c8f5b24d89692d2db19a3e03710b348b04df32823d456571ab8cfa84",
+        "spectral_class": 5
+      },
+      {
+        "contract_hash": [
+          64,
+          240,
+          118,
+          90,
+          194,
+          227,
+          174,
+          56,
+          180,
+          241,
+          54,
+          11,
+          243,
+          237,
+          207,
+          40,
+          143,
+          153,
+          208,
+          133,
+          105,
+          105,
+          80,
+          31,
+          78,
+          160,
+          32,
+          82,
+          229,
+          201,
+          109,
+          190
+        ],
+        "coord_x": 4084452335952523328,
+        "coord_y": 2940830709817209268,
+        "coord_z": 2256419315250141583,
+        "luminosity": {
+          "den": 3,
+          "num": 1
+        },
+        "name": "KS-40f0765a",
+        "planet_orbits": [
+          {
+            "den": 10,
+            "num": 1
+          },
+          {
+            "den": 1,
+            "num": 0
+          },
+          {
+            "den": 10,
+            "num": 1
+          }
+        ],
+        "qid_hex": "40f0765ac2e3ae38b4f1360bf3edcf288f99d0856969501f4ea02052e5c96dbe",
+        "spectral_class": 0
+      },
+      {
+        "contract_hash": [
+          255,
+          106,
+          156,
+          28,
+          42,
+          159,
+          231,
+          153,
+          141,
+          95,
+          148,
+          118,
+          45,
+          78,
+          34,
+          222,
+          141,
+          73,
+          240,
+          104,
+          238,
+          17,
+          102,
+          99,
+          107,
+          126,
+          0,
+          130,
+          195,
+          84,
+          182,
+          166
+        ],
+        "coord_x": -7356736463068960001,
+        "coord_y": -2440302090911457395,
+        "coord_z": 7162431973039819149,
+        "luminosity": {
+          "den": 3,
+          "num": 4
+        },
+        "name": "KS-ff6a9c1c",
+        "planet_orbits": [
+          {
+            "den": 5,
+            "num": 2
+          },
+          {
+            "den": 1,
+            "num": 0
+          },
+          {
+            "den": 10,
+            "num": 1
+          }
+        ],
+        "qid_hex": "ff6a9c1c2a9fe7998d5f94762d4e22de8d49f068ee1166636b7e0082c354b6a6",
+        "spectral_class": 0
+      },
+      {
+        "contract_hash": [
+          170,
+          183,
+          74,
+          16,
+          244,
+          60,
+          125,
+          72,
+          105,
+          27,
+          232,
+          194,
+          141,
+          80,
+          3,
+          2,
+          200,
+          37,
+          250,
+          203,
+          55,
+          246,
+          236,
+          192,
+          11,
+          117,
+          28,
+          79,
+          167,
+          17,
+          18,
+          2
+        ],
+        "coord_x": 5223398161762662314,
+        "coord_y": 145048182796589929,
+        "coord_z": -4544987204417870392,
+        "luminosity": {
+          "den": 1,
+          "num": 0
+        },
+        "name": "KS-aab74a10",
+        "planet_orbits": [
+          {
+            "den": 1,
+            "num": 0
+          }
+        ],
+        "qid_hex": "aab74a10f43c7d48691be8c28d500302c825facb37f6ecc00b751c4fa7111202",
+        "spectral_class": 0
+      },
+      {
+        "contract_hash": [
+          97,
+          170,
+          43,
+          149,
+          214,
+          78,
+          54,
+          170,
+          57,
+          144,
+          39,
+          45,
+          194,
+          232,
+          173,
+          27,
+          234,
+          65,
+          43,
+          189,
+          118,
+          176,
+          214,
+          136,
+          54,
+          167,
+          216,
+          80,
+          178,
+          10,
+          193,
+          29
+        ],
+        "coord_x": -6181666754986792351,
+        "coord_y": 1994506130673864761,
+        "coord_z": -8586481615508913686,
+        "luminosity": {
+          "den": 1,
+          "num": 1
+        },
+        "name": "KS-61aa2b95",
+        "planet_orbits": [
+          {
+            "den": 10,
+            "num": 1
+          }
+        ],
+        "qid_hex": "61aa2b95d64e36aa3990272dc2e8ad1bea412bbd76b0d68836a7d850b20ac11d",
+        "spectral_class": 0
+      },
+      {
+        "contract_hash": [
+          173,
+          190,
+          127,
+          136,
+          87,
+          184,
+          30,
+          206,
+          158,
+          19,
+          205,
+          247,
+          175,
+          8,
+          93,
+          237,
+          211,
+          226,
+          3,
+          138,
+          226,
+          252,
+          29,
+          49,
+          242,
+          95,
+          188,
+          235,
+          46,
+          79,
+          250,
+          203
+        ],
+        "coord_x": -3594232766503338323,
+        "coord_y": -1342907562016828514,
+        "coord_z": 3539262932091396819,
+        "luminosity": {
+          "den": 1,
+          "num": 0
+        },
+        "name": "KS-adbe7f88",
+        "planet_orbits": [
+          {
+            "den": 1,
+            "num": 0
+          },
+          {
+            "den": 5,
+            "num": 1
+          }
+        ],
+        "qid_hex": "adbe7f8857b81ece9e13cdf7af085dedd3e2038ae2fc1d31f25fbceb2e4ffacb",
+        "spectral_class": 5
+      }
+    ]
+  },
+  "lensing_proxies": [
+    {
+      "coord_x": -6517325476571135472,
+      "coord_y": 6748880045941300118,
+      "coord_z": -2698512123740573693,
+      "dark_object_hash": [
+        16,
+        194,
+        95,
+        99,
+        2,
+        207,
+        141,
+        165,
+        150,
+        155,
+        13,
+        10,
+        165,
+        214,
+        168,
+        93,
+        3,
+        176,
+        91,
+        82,
+        133,
+        245,
+        140,
+        218,
+        142,
+        225,
+        152,
+        150,
+        127,
+        223,
+        167,
+        210
+      ],
+      "einstein_radius_milli_arcsec": 773,
+      "lensing_mass": {
+        "den": 1000,
+        "num": 7733
+      },
+      "proxy_name": "KLens-10c25f63",
+      "qid_hex": "10c25f6302cf8da5969b0d0aa5d6a85d03b05b5285f58cda8ee198967fdfa7d2"
+    },
+    {
+      "coord_x": 1986890594568056625,
+      "coord_y": 3763847212109495360,
+      "coord_z": -6630745717337779457,
+      "dark_object_hash": [
+        49,
+        47,
+        203,
+        0,
+        120,
+        218,
+        146,
+        27,
+        64,
+        124,
+        161,
+        2,
+        25,
+        223,
+        59,
+        52,
+        255,
+        146,
+        35,
+        186,
+        230,
+        219,
+        250,
+        163,
+        199,
+        227,
+        232,
+        93,
+        240,
+        129,
+        112,
+        191
+      ],
+      "einstein_radius_milli_arcsec": 980,
+      "lensing_mass": {
+        "den": 1000,
+        "num": 9809
+      },
+      "proxy_name": "KLens-312fcb00",
+      "qid_hex": "312fcb0078da921b407ca10219df3b34ff9223bae6dbfaa3c7e3e85df08170bf"
+    },
+    {
+      "coord_x": 5126051793289429680,
+      "coord_y": 8093106943547208207,
+      "coord_z": -4712716250863920438,
+      "dark_object_hash": [
+        176,
+        66,
+        69,
+        111,
+        242,
+        100,
+        35,
+        71,
+        15,
+        242,
+        96,
+        211,
+        226,
+        125,
+        80,
+        112,
+        202,
+        154,
+        11,
+        244,
+        137,
+        17,
+        153,
+        190,
+        129,
+        112,
+        31,
+        85,
+        0,
+        213,
+        7,
+        209
+      ],
+      "einstein_radius_milli_arcsec": 754,
+      "lensing_mass": {
+        "den": 500,
+        "num": 3771
+      },
+      "proxy_name": "KLens-b042456f",
+      "qid_hex": "b042456ff26423470ff260d3e27d5070ca9a0bf4891199be81701f5500d507d1"
+    }
+  ],
+  "merkle_root": "9fe8a769ee8bcc1beef6890664363bd6bbd602dbae4d006098010d6868f2695a",
+  "sat_witnesses": [
+    {
+      "clause_rings": [
+        {
+          "clause_index": 0,
+          "is_satisfied": true,
+          "literal_count": 1,
+          "orbital_radius_milli_au": 1000
+        }
+      ],
+      "contract_hash": [
+        14,
+        70,
+        236,
+        22,
+        254,
+        191,
+        224,
+        121,
+        54,
+        58,
+        105,
+        172,
+        12,
+        231,
+        36,
+        179,
+        240,
+        65,
+        215,
+        13,
+        224,
+        196,
+        5,
+        107,
+        223,
+        140,
+        185,
+        163,
+        213,
+        152,
+        37,
+        112
+      ],
+      "moons": [
+        {
+          "bit_value": true,
+          "inclination_milli_deg": 45000,
+          "moon_index": 0,
+          "parent_ring_index": 0,
+          "phase_quadrant": 0,
+          "variable_index": 0
+        }
+      ],
+      "parent_galaxy_name": "KG-0e46ec16",
+      "qid_hex": "0e46ec16febfe079363a69ac0ce724b3f041d70de0c4056bdf8cb9a3d5982570"
+    },
+    {
+      "clause_rings": [
+        {
+          "clause_index": 0,
+          "is_satisfied": true,
+          "literal_count": 2,
+          "orbital_radius_milli_au": 1000
+        }
+      ],
+      "contract_hash": [
+        97,
+        167,
+        225,
+        150,
+        200,
+        207,
+        82,
+        239,
+        192,
+        248,
+        134,
+        200,
+        104,
+        82,
+        204,
+        77,
+        53,
+        56,
+        35,
+        169,
+        250,
+        157,
+        3,
+        125,
+        45,
+        166,
+        16,
+        174,
+        121,
+        47,
+        232,
+        114
+      ],
+      "moons": [
+        {
+          "bit_value": false,
+          "inclination_milli_deg": -45000,
+          "moon_index": 0,
+          "parent_ring_index": 0,
+          "phase_quadrant": 2,
+          "variable_index": 0
+        }
+      ],
+      "parent_galaxy_name": "KG-61a7e196",
+      "qid_hex": "61a7e196c8cf52efc0f886c86852cc4d353823a9fa9d037d2da610ae792fe872"
+    },
+    {
+      "clause_rings": [
+        {
+          "clause_index": 0,
+          "is_satisfied": true,
+          "literal_count": 1,
+          "orbital_radius_milli_au": 1000
+        },
+        {
+          "clause_index": 1,
+          "is_satisfied": true,
+          "literal_count": 1,
+          "orbital_radius_milli_au": 2000
+        }
+      ],
+      "contract_hash": [
+        216,
+        44,
+        169,
+        98,
+        16,
+        230,
+        193,
+        107,
+        119,
+        27,
+        4,
+        100,
+        71,
+        55,
+        65,
+        103,
+        73,
+        249,
+        224,
+        82,
+        57,
+        16,
+        241,
+        102,
+        228,
+        152,
+        222,
+        53,
+        207,
+        7,
+        226,
+        141
+      ],
+      "moons": [
+        {
+          "bit_value": true,
+          "inclination_milli_deg": 45000,
+          "moon_index": 0,
+          "parent_ring_index": 0,
+          "phase_quadrant": 0,
+          "variable_index": 0
+        },
+        {
+          "bit_value": true,
+          "inclination_milli_deg": 45000,
+          "moon_index": 1,
+          "parent_ring_index": 1,
+          "phase_quadrant": 0,
+          "variable_index": 1
+        }
+      ],
+      "parent_galaxy_name": "KG-d82ca962",
+      "qid_hex": "d82ca96210e6c16b771b04644737416749f9e0523910f166e498de35cf07e28d"
+    },
+    {
+      "clause_rings": [
+        {
+          "clause_index": 0,
+          "is_satisfied": true,
+          "literal_count": 3,
+          "orbital_radius_milli_au": 1000
+        }
+      ],
+      "contract_hash": [
+        134,
+        68,
+        137,
+        67,
+        230,
+        249,
+        132,
+        144,
+        22,
+        219,
+        200,
+        156,
+        119,
+        62,
+        199,
+        201,
+        240,
+        144,
+        87,
+        41,
+        40,
+        128,
+        73,
+        85,
+        232,
+        217,
+        188,
+        107,
+        243,
+        31,
+        224,
+        111
+      ],
+      "moons": [
+        {
+          "bit_value": false,
+          "inclination_milli_deg": -45000,
+          "moon_index": 0,
+          "parent_ring_index": 0,
+          "phase_quadrant": 2,
+          "variable_index": 0
+        },
+        {
+          "bit_value": false,
+          "inclination_milli_deg": -45000,
+          "moon_index": 1,
+          "parent_ring_index": 0,
+          "phase_quadrant": 2,
+          "variable_index": 1
+        },
+        {
+          "bit_value": true,
+          "inclination_milli_deg": 45000,
+          "moon_index": 2,
+          "parent_ring_index": 0,
+          "phase_quadrant": 0,
+          "variable_index": 2
+        }
+      ],
+      "parent_galaxy_name": "KG-86448943",
+      "qid_hex": "86448943e6f9849016dbc89c773ec7c9f090572928804955e8d9bc6bf31fe06f"
+    },
+    {
+      "clause_rings": [],
+      "contract_hash": [
+        152,
+        138,
+        58,
+        25,
+        105,
+        86,
+        172,
+        2,
+        225,
+        93,
+        41,
+        85,
+        228,
+        236,
+        226,
+        154,
+        208,
+        235,
+        31,
+        234,
+        76,
+        211,
+        64,
+        79,
+        220,
+        104,
+        52,
+        118,
+        23,
+        79,
+        49,
+        165
+      ],
+      "moons": [
+        {
+          "bit_value": false,
+          "inclination_milli_deg": -45000,
+          "moon_index": 0,
+          "parent_ring_index": 0,
+          "phase_quadrant": 2,
+          "variable_index": 0
+        },
+        {
+          "bit_value": false,
+          "inclination_milli_deg": -45000,
+          "moon_index": 1,
+          "parent_ring_index": 0,
+          "phase_quadrant": 2,
+          "variable_index": 1
+        }
+      ],
+      "parent_galaxy_name": "KG-988a3a19",
+      "qid_hex": "988a3a196956ac02e15d2955e4ece29ad0eb1fea4cd3404fdc683476174f31a5"
+    }
+  ],
+  "unsat_witnesses": [
+    {
+      "cluster_name": "KC-7795c8e1",
+      "contract_hash": [
+        119,
+        149,
+        200,
+        225,
+        26,
+        111,
+        199,
+        28,
+        33,
+        208,
+        17,
+        250,
+        206,
+        66,
+        72,
+        242,
+        18,
+        64,
+        188,
+        185,
+        249,
+        24,
+        109,
+        13,
+        204,
+        153,
+        253,
+        87,
+        251,
+        114,
+        0,
+        26
+      ],
+      "contradiction_step_index": 1,
+      "parent_galaxy_name": "KG-7795c8e1",
+      "proof_steps": [
+        {
+          "parent_step_index": null,
+          "radial_distance_milli_pc": 200,
+          "spectral_class": 0,
+          "step_index": 0
+        },
+        {
+          "parent_step_index": 0,
+          "radial_distance_milli_pc": 100,
+          "spectral_class": 1,
+          "step_index": 1
+        }
+      ],
+      "qid_hex": "7795c8e11a6fc71c21d011face4248f21240bcb9f9186d0dcc99fd57fb72001a"
+    },
+    {
+      "cluster_name": "KC-8422a337",
+      "contract_hash": [
+        132,
+        34,
+        163,
+        55,
+        87,
+        33,
+        205,
+        253,
+        233,
+        109,
+        231,
+        248,
+        184,
+        19,
+        122,
+        134,
+        150,
+        219,
+        49,
+        201,
+        78,
+        159,
+        152,
+        216,
+        176,
+        238,
+        246,
+        189,
+        59,
+        149,
+        209,
+        16
+      ],
+      "contradiction_step_index": 7,
+      "parent_galaxy_name": "KG-8422a337",
+      "proof_steps": [
+        {
+          "parent_step_index": null,
+          "radial_distance_milli_pc": 800,
+          "spectral_class": 0,
+          "step_index": 0
+        },
+        {
+          "parent_step_index": null,
+          "radial_distance_milli_pc": 700,
+          "spectral_class": 1,
+          "step_index": 1
+        },
+        {
+          "parent_step_index": null,
+          "radial_distance_milli_pc": 600,
+          "spectral_class": 2,
+          "step_index": 2
+        },
+        {
+          "parent_step_index": null,
+          "radial_distance_milli_pc": 500,
+          "spectral_class": 3,
+          "step_index": 3
+        },
+        {
+          "parent_step_index": 0,
+          "radial_distance_milli_pc": 400,
+          "spectral_class": 4,
+          "step_index": 4
+        },
+        {
+          "parent_step_index": 2,
+          "radial_distance_milli_pc": 300,
+          "spectral_class": 5,
+          "step_index": 5
+        },
+        {
+          "parent_step_index": 0,
+          "radial_distance_milli_pc": 200,
+          "spectral_class": 6,
+          "step_index": 6
+        },
+        {
+          "parent_step_index": 1,
+          "radial_distance_milli_pc": 100,
+          "spectral_class": 0,
+          "step_index": 7
+        }
+      ],
+      "qid_hex": "8422a3375721cdfde96de7f8b8137a8696db31c94e9f98d8b0eef6bd3b95d110"
+    }
+  ]
+}

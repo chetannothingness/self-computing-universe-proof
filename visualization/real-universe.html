@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Universe — NASA Exoplanet Data, Witnessed by Kernel</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #000; color: #ccc; font-family: 'Courier New', monospace; }
+canvas { display: block; }
+#ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#ui > * { pointer-events: auto; }
+
+#header {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  text-align: center; color: #7799bb; opacity: 0.9; text-shadow: 0 0 8px #224;
+}
+#header h1 { font-size: 15px; letter-spacing: 2px; }
+#header .sub { font-size: 11px; color: #556; margin-top: 2px; }
+
+#stats-bar {
+  position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 24px; font-size: 11px; color: #668;
+}
+.stat-value { color: #8af; font-weight: bold; }
+
+#controls {
+  position: absolute; top: 10px; left: 10px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.btn {
+  background: rgba(20,30,50,0.9); border: 1px solid #334; color: #99b;
+  padding: 5px 10px; font-size: 10px; cursor: pointer; border-radius: 3px;
+  font-family: inherit; transition: all 0.2s;
+}
+.btn:hover { background: rgba(40,60,100,0.9); border-color: #558; }
+.btn.active { border-color: #6af; color: #6af; }
+
+#filters {
+  position: absolute; top: 10px; right: 10px; width: 200px;
+  background: rgba(10,15,25,0.92); border: 1px solid #223; border-radius: 4px;
+  padding: 10px; font-size: 10px;
+}
+#filters label { display: block; margin: 6px 0 2px; color: #668; }
+#filters input[type=range] { width: 100%; }
+#filters .range-val { color: #8af; float: right; }
+
+#info-panel {
+  position: absolute; bottom: 10px; left: 10px; width: 360px; max-height: 50vh;
+  background: rgba(10,15,25,0.94); border: 1px solid #334; border-radius: 4px;
+  padding: 12px; font-size: 11px; line-height: 1.6; display: none; overflow-y: auto;
+}
+#info-panel h2 { font-size: 14px; color: #6af; margin-bottom: 6px; }
+#info-panel .close { position: absolute; top: 6px; right: 8px; cursor: pointer; color: #446; font-size: 14px; }
+.field { margin: 2px 0; }
+.lbl { color: #557; }
+.val { color: #abd; }
+.hash { color: #4a8; font-size: 9px; word-break: break-all; }
+.planet-row { padding: 4px 0; border-bottom: 1px solid #1a1f2a; }
+.planet-name { color: #6cf; }
+
+#tooltip {
+  position: absolute; display: none; background: rgba(10,15,25,0.92);
+  border: 1px solid #335; border-radius: 3px; padding: 3px 7px;
+  font-size: 10px; color: #9ac; pointer-events: none; white-space: nowrap;
+}
+
+#legend {
+  position: absolute; bottom: 10px; right: 10px;
+  background: rgba(10,15,25,0.85); border: 1px solid #223; border-radius: 4px;
+  padding: 8px 12px; font-size: 10px; line-height: 2;
+}
+.ldot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+
+#proof-bar {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(10,20,15,0.9); border: 1px solid #253; border-radius: 4px;
+  padding: 6px 14px; font-size: 9px; color: #5a7; text-align: center;
+}
+.proof-label { color: #364; }
+
+#loader {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  text-align: center; color: #7799bb;
+}
+#loader p { margin: 8px 0; font-size: 12px; }
+#loader code { background: #112; padding: 2px 6px; border-radius: 2px; color: #8af; }
+</style>
+</head>
+<body>
+
+<div id="ui">
+  <div id="header">
+    <h1>REAL UNIVERSE — EXOPLANET ARCHIVE</h1>
+    <div class="sub">4,566 host stars &middot; 6,128 planets &middot; NASA Exoplanet Archive &middot; Kernel-witnessed</div>
+  </div>
+
+  <div id="stats-bar">
+    <span>Stars: <span class="stat-value" id="s-stars">0</span></span>
+    <span>Planets: <span class="stat-value" id="s-planets">0</span></span>
+    <span>Multi-planet: <span class="stat-value" id="s-multi">0</span></span>
+    <span>Nearest: <span class="stat-value" id="s-nearest">—</span></span>
+    <span>Visible: <span class="stat-value" id="s-visible">0</span></span>
+  </div>
+
+  <div id="controls">
+    <button class="btn active" onclick="togglePlanets()">Show Planets</button>
+    <button class="btn active" onclick="toggleOrbits()">Show Orbits</button>
+    <button class="btn" onclick="flyToNearest()">Nearest Star</button>
+    <button class="btn" onclick="flyToRichest()">Most Planets</button>
+    <button class="btn" onclick="flyToHabitable()">Habitable Zone</button>
+    <button class="btn" onclick="resetView()">Reset View</button>
+    <button class="btn" onclick="startCinematic()" id="cine-btn">Cinematic [C]</button>
+    <div style="margin-top:8px;font-size:9px;color:#446;line-height:1.8">
+      W/S — Zoom in/out<br>
+      A/D — Rotate L/R<br>
+      Q/E — Rotate Up/Down<br>
+      C — Cinematic flythrough<br>
+      Esc — Stop cinematic
+    </div>
+  </div>
+
+  <div id="filters">
+    <label>Max Distance (pc): <span class="range-val" id="dist-val">500</span></label>
+    <input type="range" id="dist-slider" min="5" max="2000" value="500" oninput="updateFilters()">
+    <label>Min Planet Mass (M<sub>J</sub>): <span class="range-val" id="mass-val">0</span></label>
+    <input type="range" id="mass-slider" min="0" max="100" value="0" step="1" oninput="updateFilters()">
+    <label>Spectral Class</label>
+    <div style="display:flex;gap:3px;margin-top:4px" id="spec-btns"></div>
+  </div>
+
+  <div id="info-panel">
+    <span class="close" onclick="closeInfo()">&times;</span>
+    <h2 id="info-title"></h2>
+    <div id="info-body"></div>
+  </div>
+
+  <div id="tooltip"></div>
+
+  <div id="legend">
+    <div><span class="ldot" style="background:#9bb0ff"></span>O/B — Hot blue</div>
+    <div><span class="ldot" style="background:#cad7ff"></span>A — White</div>
+    <div><span class="ldot" style="background:#fff4e8"></span>F/G — Sun-like</div>
+    <div><span class="ldot" style="background:#ffddb4"></span>K — Orange</div>
+    <div><span class="ldot" style="background:#ffbd6f"></span>M — Red dwarf</div>
+    <div><span class="ldot" style="background:#00ddff"></span>Planet orbit</div>
+  </div>
+
+  <div id="proof-bar">
+    <span class="proof-label">KERNEL WITNESS:</span>
+    Fetch <span id="p-fetch" class="hash">—</span> &rarr;
+    Normalize <span id="p-norm" class="hash">—</span> &rarr;
+    Merkle <span id="p-merkle" class="hash">—</span>
+    &middot; BuildHash <span id="p-build" class="hash">—</span>
+  </div>
+
+  <div id="loader">
+    <h2>Load Real Exoplanet Data</h2>
+    <p>Generate with:</p>
+    <p><code>cargo run -- exo-patch --output /tmp/exo</code></p>
+    <p><code>python3 visualization/export_exo.py /tmp/exo/addons/TOE_REAL exo_viz.json</code></p>
+    <br>
+    <input type="file" id="file-input" accept=".json">
+    <p style="margin-top:12px;font-size:10px;color:#445">Load the generated exo_viz.json file</p>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+let scene, camera, renderer, controls;
+let starPoints, planetMeshes = [], orbitLines = [];
+let starData = [], planetData = [], proofData = {};
+let starPositions = [];     // Vec3 per star
+let starIndexByName = {};   // name -> index
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+let showPlanets = true, showOrbits = true;
+let maxDist = 500, minMass = 0;
+let activeSpectral = new Set(['O','B','A','F','G','K','M']);
+let flyTarget = null, flyLerp = 0;
+
+// Spectral class → color
+const SPEC_COLOR = {
+  O: 0x9bb0ff, B: 0xaabfff, A: 0xcad7ff, F: 0xf8f7ff,
+  G: 0xfff4e8, K: 0xffddb4, M: 0xffbd6f
+};
+
+function getSpectralClass(spec) {
+  if (!spec) return 'K'; // default
+  const c = spec.charAt(0).toUpperCase();
+  return SPEC_COLOR[c] ? c : 'K';
+}
+
+function getSpectralColor(spec) {
+  return SPEC_COLOR[getSpectralClass(spec)] || 0xffddb4;
+}
+
+// RA (degrees), Dec (degrees), Dist (parsecs) → 3D cartesian
+function celestialToXYZ(ra_deg, dec_deg, dist_pc) {
+  const ra_rad = ra_deg * Math.PI / 180;
+  const dec_rad = dec_deg * Math.PI / 180;
+  const r = dist_pc;
+  return new THREE.Vector3(
+    r * Math.cos(dec_rad) * Math.cos(ra_rad),
+    r * Math.sin(dec_rad),
+    r * Math.cos(dec_rad) * Math.sin(ra_rad)
+  );
+}
+
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000308);
+
+  camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.01, 50000);
+  camera.position.set(0, 50, 150);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  document.body.prepend(renderer.domElement);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.06;
+  controls.maxDistance = 5000;
+
+  scene.add(new THREE.AmbientLight(0x334455, 0.3));
+
+  // Background galaxy dust
+  const bgGeo = new THREE.BufferGeometry();
+  const bgCount = 5000;
+  const bgPos = new Float32Array(bgCount * 3);
+  for (let i = 0; i < bgCount; i++) {
+    const r = 3000 + Math.random() * 5000;
+    const t = Math.random() * Math.PI * 2;
+    const p = Math.acos(2 * Math.random() - 1);
+    bgPos[i*3] = r * Math.sin(p) * Math.cos(t);
+    bgPos[i*3+1] = r * Math.sin(p) * Math.sin(t);
+    bgPos[i*3+2] = r * Math.cos(p);
+  }
+  bgGeo.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
+  scene.add(new THREE.Points(bgGeo, new THREE.PointsMaterial({ color: 0x334455, size: 0.4, transparent: true, opacity: 0.5 })));
+
+  // Sun at origin
+  const sunGeo = new THREE.SphereGeometry(0.5, 16, 16);
+  const sunMat = new THREE.MeshBasicMaterial({ color: 0xffff88 });
+  scene.add(new THREE.Mesh(sunGeo, sunMat));
+  scene.add(new THREE.PointLight(0xffffcc, 0.5, 20));
+
+  // Distance grid rings (10, 50, 100, 500 pc)
+  [10, 50, 100, 500].forEach(r => {
+    const ringGeo = new THREE.RingGeometry(r - 0.05, r + 0.05, 128);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x334466, transparent: true, opacity: 0.2, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    scene.add(ring);
+  });
+
+  // Spectral filter buttons
+  const specDiv = document.getElementById('spec-btns');
+  for (const cls of ['O','B','A','F','G','K','M']) {
+    const btn = document.createElement('button');
+    btn.className = 'btn active';
+    btn.style.padding = '2px 5px';
+    btn.style.fontSize = '9px';
+    btn.style.background = '#' + SPEC_COLOR[cls].toString(16).padStart(6, '0') + '33';
+    btn.textContent = cls;
+    btn.onclick = () => { toggleSpectral(cls); btn.classList.toggle('active'); };
+    specDiv.appendChild(btn);
+  }
+
+  addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+  addEventListener('click', onClick);
+  addEventListener('mousemove', onMouseMove);
+  document.getElementById('file-input').addEventListener('change', onFileLoad);
+
+  animate();
+}
+
+function buildScene(data) {
+  starData = data.stars;
+  planetData = data.planets;
+  proofData = data.proof || {};
+
+  // Show proof hashes
+  if (proofData.fetch_hash) {
+    document.getElementById('p-fetch').textContent = proofData.fetch_hash.substring(0, 12) + '...';
+    document.getElementById('p-norm').textContent = (proofData.normalized_hash || '').substring(0, 12) + '...';
+    document.getElementById('p-merkle').textContent = (proofData.merkle_root || '').substring(0, 12) + '...';
+    document.getElementById('p-build').textContent = (proofData.build_hash || '').substring(0, 12) + '...';
+  }
+
+  // Stats
+  const parentCounts = {};
+  planetData.forEach(p => { parentCounts[p.parent] = (parentCounts[p.parent] || 0) + 1; });
+  const multiCount = Object.values(parentCounts).filter(c => c >= 2).length;
+  const validDists = starData.filter(s => s.dist > 0).map(s => s.dist);
+  const nearestDist = validDists.length ? Math.min(...validDists) : 0;
+  const nearest = validDists.length ? starData.find(s => s.dist === nearestDist) : null;
+
+  document.getElementById('s-stars').textContent = starData.length;
+  document.getElementById('s-planets').textContent = planetData.length;
+  document.getElementById('s-multi').textContent = multiCount;
+  document.getElementById('s-nearest').textContent = nearest ? `${nearest.name} (${nearest.dist.toFixed(2)} pc)` : '—';
+
+  // Index stars by name
+  starData.forEach((s, i) => { starIndexByName[s.name] = i; });
+
+  // Build star positions
+  const positions = new Float32Array(starData.length * 3);
+  const colors = new Float32Array(starData.length * 3);
+  const sizes = new Float32Array(starData.length);
+
+  starData.forEach((s, i) => {
+    // All values now in natural units: RA/Dec in degrees, Dist in parsecs
+    const pos = celestialToXYZ(s.ra, s.dec, s.dist);
+    const v = new THREE.Vector3(pos.x, pos.y, pos.z);
+    starPositions.push(v);
+    positions[i*3] = v.x;
+    positions[i*3+1] = v.y;
+    positions[i*3+2] = v.z;
+
+    const c = new THREE.Color(getSpectralColor(s.spectral));
+    colors[i*3] = c.r;
+    colors[i*3+1] = c.g;
+    colors[i*3+2] = c.b;
+
+    // Size by magnitude (brighter = bigger, lower mag = brighter)
+    // Screen-space pixels: bright stars ~4px, dim stars ~1.5px
+    const mag = s.mag || 12;
+    sizes[i] = Math.max(1.5, 5 - mag * 0.25);
+  });
+
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  starGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  starGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const starMat = new THREE.PointsMaterial({
+    size: 3, vertexColors: true, transparent: true, opacity: 0.9,
+    sizeAttenuation: false  // constant screen-space size so stars don't become huge squares
+  });
+  starPoints = new THREE.Points(starGeo, starMat);
+  scene.add(starPoints);
+
+  // Build planets
+  buildPlanets();
+
+  updateFilters();
+}
+
+function buildPlanets() {
+  // Clear existing
+  planetMeshes.forEach(m => scene.remove(m));
+  orbitLines.forEach(l => scene.remove(l));
+  planetMeshes = [];
+  orbitLines = [];
+
+  planetData.forEach(p => {
+    const si = starIndexByName[p.parent];
+    if (si === undefined) return;
+    const starPos = starPositions[si];
+    if (!starPos) return;
+
+    // Orbital radius: log-scaled for visibility (real AU scale is invisible at parsec distances)
+    const sma = p.sma || 1;
+    const orbitRadius = Math.max(0.15, Math.log10(sma + 1) * 1.0 + 0.15);
+
+    // Planet sphere — small enough not to dominate
+    const pRadius = Math.max(0.03, Math.min(0.12, (p.radius || 0.1) * 0.08));
+    const geo = new THREE.SphereGeometry(pRadius, 8, 8);
+
+    // Color by mass: small = blue, big = orange
+    const mass = p.mass || 0.01;
+    const hue = mass > 1 ? 0.08 : mass > 0.1 ? 0.15 : 0.55;
+    const col = new THREE.Color().setHSL(hue, 0.7, 0.6);
+
+    const mat = new THREE.MeshBasicMaterial({ color: col });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.userData = { parent: p.parent, starIndex: si, orbitRadius, speed: p.period ? 1/Math.sqrt(p.period) : 0.5, angle: Math.random() * Math.PI * 2, planetData: p };
+
+    // Initial position
+    mesh.position.copy(starPos).add(new THREE.Vector3(orbitRadius, 0, 0));
+    scene.add(mesh);
+    planetMeshes.push(mesh);
+
+    // Orbit ring — bright cyan for contrast against dark background
+    const ringGeo = new THREE.RingGeometry(orbitRadius - 0.02, orbitRadius + 0.02, 48);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ccff, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.copy(starPos);
+    ring.rotation.x = -Math.PI / 2 + (p.inc ? (p.inc * Math.PI / 180 - Math.PI/2) * 0.1 : 0);
+    ring.userData = { starIndex: si };
+    scene.add(ring);
+    orbitLines.push(ring);
+  });
+}
+
+function updateFilters() {
+  maxDist = parseFloat(document.getElementById('dist-slider').value);
+  minMass = parseFloat(document.getElementById('mass-slider').value);
+  document.getElementById('dist-val').textContent = maxDist;
+  document.getElementById('mass-val').textContent = minMass;
+
+  if (!starPoints) return;
+
+  // Update star visibility via color alpha (set size to 0 to hide)
+  const sizes = starPoints.geometry.getAttribute('size');
+  let visCount = 0;
+
+  starData.forEach((s, i) => {
+    const dist = s.dist;  // already in parsecs
+    const cls = getSpectralClass(s.spectral);
+    const visible = dist <= maxDist && dist > 0 && activeSpectral.has(cls);
+    const mag = s.mag || 12;
+    sizes.array[i] = visible ? Math.max(1.5, 5 - mag * 0.25) : 0;
+    if (visible) visCount++;
+  });
+  sizes.needsUpdate = true;
+
+  document.getElementById('s-visible').textContent = visCount;
+
+  // Planet visibility
+  planetMeshes.forEach(m => {
+    const si = m.userData.starIndex;
+    const s = starData[si];
+    const cls = getSpectralClass(s.spectral);
+    const pd = m.userData.planetData;
+    const mass = pd.mass || 0;
+    const starVisible = s.dist <= maxDist && s.dist > 0 && activeSpectral.has(cls);
+    m.visible = showPlanets && starVisible && mass >= minMass;
+  });
+
+  orbitLines.forEach(r => {
+    const si = r.userData.starIndex;
+    const s = starData[si];
+    const cls = getSpectralClass(s.spectral);
+    r.visible = showOrbits && s.dist <= maxDist && s.dist > 0 && activeSpectral.has(cls);
+  });
+}
+
+function toggleSpectral(cls) {
+  if (activeSpectral.has(cls)) activeSpectral.delete(cls);
+  else activeSpectral.add(cls);
+  updateFilters();
+}
+
+// Animation
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+
+  // Animate planet orbits
+  planetMeshes.forEach(m => {
+    if (!m.visible) return;
+    const ud = m.userData;
+    const starPos = starPositions[ud.starIndex];
+    if (!starPos) return;
+    ud.angle += dt * ud.speed * 0.5;
+    m.position.set(
+      starPos.x + Math.cos(ud.angle) * ud.orbitRadius,
+      starPos.y,
+      starPos.z + Math.sin(ud.angle) * ud.orbitRadius
+    );
+  });
+
+  // Cinematic flythrough
+  if (cinematicActive) {
+    cinematicTime += dt;
+    if (cinematicTime >= CINEMATIC_DURATION) {
+      stopCinematic();
+    } else {
+      const state = getCinematicState(cinematicTime);
+      camera.position.copy(state.pos);
+      controls.target.copy(state.target);
+    }
+  }
+
+  // Fly-to animation
+  if (flyTarget && !cinematicActive) {
+    flyLerp += dt * 0.8;
+    if (flyLerp >= 1) { flyTarget = null; flyLerp = 0; }
+    else {
+      const offset = new THREE.Vector3(3, 2, 3);
+      camera.position.lerp(flyTarget.clone().add(offset), flyLerp * 0.05);
+      controls.target.lerp(flyTarget, flyLerp * 0.05);
+    }
+  }
+
+  // Keyboard smooth controls
+  applyKeyboardControls(dt);
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// Click detection
+function onClick(e) {
+  mouse.x = (e.clientX / innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  raycaster.params.Points.threshold = 1;
+
+  if (starPoints) {
+    const hits = raycaster.intersectObject(starPoints);
+    if (hits.length > 0) {
+      const idx = hits[0].index;
+      showStarInfo(idx);
+      return;
+    }
+  }
+
+  const planetHits = raycaster.intersectObjects(planetMeshes.filter(m => m.visible));
+  if (planetHits.length > 0) {
+    const pd = planetHits[0].object.userData.planetData;
+    showPlanetInfo(pd);
+  }
+}
+
+function onMouseMove(e) {
+  const tip = document.getElementById('tooltip');
+  mouse.x = (e.clientX / innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  raycaster.params.Points.threshold = 1;
+
+  if (starPoints) {
+    const hits = raycaster.intersectObject(starPoints);
+    if (hits.length > 0) {
+      const s = starData[hits[0].index];
+      tip.style.display = 'block';
+      tip.style.left = e.clientX + 10 + 'px';
+      tip.style.top = e.clientY - 8 + 'px';
+      const nPlanets = planetData.filter(p => p.parent === s.name).length;
+      tip.textContent = `${s.name} (${s.dist.toFixed(1)} pc, ${nPlanets} planet${nPlanets !== 1 ? 's' : ''})`;
+      return;
+    }
+  }
+  tip.style.display = 'none';
+}
+
+function showStarInfo(idx) {
+  const s = starData[idx];
+  const planets = planetData.filter(p => p.parent === s.name);
+  const panel = document.getElementById('info-panel');
+  document.getElementById('info-title').textContent = s.name;
+
+  let html = '';
+  html += `<div class="field"><span class="lbl">Spectral Type: </span><span class="val">${s.spectral || 'Unknown'}</span></div>`;
+  html += `<div class="field"><span class="lbl">Distance: </span><span class="val">${s.dist.toFixed(2)} parsecs (${(s.dist * 3.26156).toFixed(1)} ly)</span></div>`;
+  html += `<div class="field"><span class="lbl">RA / Dec: </span><span class="val">${s.ra.toFixed(4)}&deg; / ${s.dec.toFixed(4)}&deg;</span></div>`;
+  if (s.mag) html += `<div class="field"><span class="lbl">V Magnitude: </span><span class="val">${s.mag.toFixed(2)}</span></div>`;
+  html += `<div class="field"><span class="lbl">Planets: </span><span class="val">${planets.length}</span></div>`;
+
+  if (planets.length > 0) {
+    html += `<div style="margin-top:8px;border-top:1px solid #223;padding-top:6px"><span class="lbl">Planetary System:</span></div>`;
+    planets.sort((a, b) => (a.sma || 999) - (b.sma || 999));
+    planets.forEach(p => {
+      html += `<div class="planet-row">`;
+      html += `<span class="planet-name">${p.name}</span>`;
+      if (p.period) html += ` <span class="lbl">P=</span><span class="val">${p.period.toFixed(2)}d</span>`;
+      if (p.sma) html += ` <span class="lbl">a=</span><span class="val">${p.sma.toFixed(3)}AU</span>`;
+      if (p.mass) html += ` <span class="lbl">M=</span><span class="val">${p.mass.toFixed(3)}M<sub>J</sub></span>`;
+      if (p.radius) html += ` <span class="lbl">R=</span><span class="val">${p.radius.toFixed(3)}R<sub>J</sub></span>`;
+      if (p.ecc) html += ` <span class="lbl">e=</span><span class="val">${p.ecc.toFixed(3)}</span>`;
+      if (p.inc) html += ` <span class="lbl">i=</span><span class="val">${p.inc.toFixed(1)}&deg;</span>`;
+      html += `</div>`;
+    });
+  }
+
+  html += `<div style="margin-top:8px;border-top:1px solid #223;padding-top:6px">`;
+  html += `<span class="lbl">Kernel Witness Chain:</span><br>`;
+  html += `<span class="hash">This star's data was fetched from NASA, normalized to integer representation (zero floats), hashed into a Merkle tree, and cryptographically witnessed by the kernel. Any tampering breaks the chain.</span>`;
+  html += `</div>`;
+
+  document.getElementById('info-body').innerHTML = html;
+  panel.style.display = 'block';
+}
+
+function showPlanetInfo(p) {
+  const panel = document.getElementById('info-panel');
+  document.getElementById('info-title').textContent = p.name;
+
+  let html = '';
+  html += `<div class="field"><span class="lbl">Host Star: </span><span class="val">${p.parent}</span></div>`;
+  if (p.period) html += `<div class="field"><span class="lbl">Orbital Period: </span><span class="val">${p.period.toFixed(4)} days (${(p.period/365.25).toFixed(2)} years)</span></div>`;
+  if (p.sma) html += `<div class="field"><span class="lbl">Semi-major Axis: </span><span class="val">${p.sma.toFixed(4)} AU</span></div>`;
+  if (p.mass) html += `<div class="field"><span class="lbl">Mass: </span><span class="val">${p.mass.toFixed(4)} M<sub>Jupiter</sub> (${(p.mass*317.8).toFixed(1)} M<sub>Earth</sub>)</span></div>`;
+  if (p.radius) html += `<div class="field"><span class="lbl">Radius: </span><span class="val">${p.radius.toFixed(4)} R<sub>Jupiter</sub> (${(p.radius*11.2).toFixed(1)} R<sub>Earth</sub>)</span></div>`;
+  if (p.ecc) html += `<div class="field"><span class="lbl">Eccentricity: </span><span class="val">${p.ecc.toFixed(4)}</span></div>`;
+  if (p.inc) html += `<div class="field"><span class="lbl">Inclination: </span><span class="val">${p.inc.toFixed(2)}&deg;</span></div>`;
+
+  // Habitable zone rough check
+  if (p.sma) {
+    const inHZ = p.sma >= 0.7 && p.sma <= 1.5;
+    html += `<div class="field"><span class="lbl">Habitable Zone: </span><span class="val" style="color:${inHZ ? '#4f4' : '#f44'}">${inHZ ? 'YES — within 0.7-1.5 AU' : 'No'}</span></div>`;
+  }
+
+  document.getElementById('info-body').innerHTML = html;
+  panel.style.display = 'block';
+}
+
+// ── Keyboard controls for smooth camera movement ──
+const keysDown = new Set();
+addEventListener('keydown', e => {
+  keysDown.add(e.key.toLowerCase());
+  if (e.key.toLowerCase() === 'c' && !cinematicActive) startCinematic();
+  if (e.key === 'Escape') stopCinematic();
+});
+addEventListener('keyup', e => keysDown.delete(e.key.toLowerCase()));
+
+function applyKeyboardControls(dt) {
+  if (cinematicActive) return;  // cinematic takes over camera
+
+  // Speed proportional to distance from target — slow when close, fast when far
+  const dist = camera.position.distanceTo(controls.target);
+  const speed = dist * 0.4 * dt;      // 40% of distance per second — feels gentle
+  const rotSpeed = 0.3 * dt;          // slow smooth rotation
+
+  // Get camera direction vectors
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  const right = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
+
+  // W/S — zoom in/out (move along view direction)
+  if (keysDown.has('w')) {
+    camera.position.addScaledVector(dir, speed);
+    controls.target.addScaledVector(dir, speed);
+  }
+  if (keysDown.has('s')) {
+    camera.position.addScaledVector(dir, -speed);
+    controls.target.addScaledVector(dir, -speed);
+  }
+  // A/D — orbit left/right around target
+  if (keysDown.has('a') || keysDown.has('d')) {
+    const angle = keysDown.has('a') ? rotSpeed : -rotSpeed;
+    const offset = camera.position.clone().sub(controls.target);
+    offset.applyAxisAngle(camera.up, angle);
+    camera.position.copy(controls.target).add(offset);
+    camera.lookAt(controls.target);
+  }
+  // Q/E — orbit up/down around target
+  if (keysDown.has('q') || keysDown.has('e')) {
+    const angle = keysDown.has('q') ? rotSpeed : -rotSpeed;
+    const offset = camera.position.clone().sub(controls.target);
+    offset.applyAxisAngle(right, angle);
+    camera.position.copy(controls.target).add(offset);
+    camera.lookAt(controls.target);
+  }
+}
+
+// ── Cinematic auto-flythrough ──
+let cinematicActive = false;
+let cinematicTime = 0;
+let cinematicStartPos = null;
+let cinematicStartTarget = null;
+
+// Cinematic keyframes — curved trajectory to stay in star-dense regions
+// Phase 1 (0-3s): hold current close-up
+// Phase 2 (3-9s): smooth zoom out, curving through star field
+// Phase 3 (9-12s): wide view with gentle orbit
+// Phase 4 (12-18s): zoom back in to orbit-rich area near Sun
+// Phase 5 (18-20s): hold close-up on orbits
+const CINEMATIC_DURATION = 20;
+
+function getCinematicState(t) {
+  const startPos = cinematicStartPos;
+  const startTarget = cinematicStartTarget;
+  const widePos = new THREE.Vector3(80, 250, 500);
+  const wideTarget = new THREE.Vector3(0, 0, 0);
+  // Close-up endpoint: near the Sun where orbits are dense
+  const closePos = new THREE.Vector3(3, 12, 25);
+  const closeTarget = new THREE.Vector3(0, 0, 0);
+
+  if (t < 3) {
+    // Hold start
+    return { pos: startPos.clone(), target: startTarget.clone() };
+  } else if (t < 9) {
+    // Zoom out along a curved path (quadratic bezier to stay in dense areas)
+    const f = smoothstep((t - 3) / 6);
+    // Control point offset to the side so the path curves through stars
+    const mid = new THREE.Vector3(
+      startPos.x * 0.5 + widePos.x * 0.5 + 60,
+      startPos.y * 0.3 + widePos.y * 0.7,
+      startPos.z * 0.5 + widePos.z * 0.5 + 40
+    );
+    const midTarget = startTarget.clone().lerp(wideTarget, 0.5);
+    // Quadratic bezier: (1-f)^2*A + 2*(1-f)*f*B + f^2*C
+    const pos = startPos.clone().multiplyScalar((1-f)*(1-f))
+      .add(mid.clone().multiplyScalar(2*(1-f)*f))
+      .add(widePos.clone().multiplyScalar(f*f));
+    const tgt = startTarget.clone().multiplyScalar((1-f)*(1-f))
+      .add(midTarget.clone().multiplyScalar(2*(1-f)*f))
+      .add(wideTarget.clone().multiplyScalar(f*f));
+    return { pos, target: tgt };
+  } else if (t < 12) {
+    // Wide view with gentle orbit
+    const angle = (t - 9) * 0.12;
+    const p = widePos.clone();
+    const r = Math.sqrt(p.x * p.x + p.z * p.z);
+    const baseAngle = Math.atan2(p.z, p.x);
+    p.x = r * Math.cos(baseAngle + angle);
+    p.z = r * Math.sin(baseAngle + angle);
+    return { pos: p, target: wideTarget.clone() };
+  } else if (t < 18) {
+    // Zoom back in — curved path into orbit-dense area
+    const f = smoothstep((t - 12) / 6);
+    // Start from where the wide orbit ended
+    const endAngle = 3 * 0.12;
+    const orbitedWide = widePos.clone();
+    const wr = Math.sqrt(orbitedWide.x * orbitedWide.x + orbitedWide.z * orbitedWide.z);
+    const wBaseAngle = Math.atan2(orbitedWide.z, orbitedWide.x);
+    orbitedWide.x = wr * Math.cos(wBaseAngle + endAngle);
+    orbitedWide.z = wr * Math.sin(wBaseAngle + endAngle);
+    // Control point: sweep down through the mid-field stars
+    const mid = new THREE.Vector3(30, 80, 120);
+    const pos = orbitedWide.clone().multiplyScalar((1-f)*(1-f))
+      .add(mid.clone().multiplyScalar(2*(1-f)*f))
+      .add(closePos.clone().multiplyScalar(f*f));
+    const tgt = wideTarget.clone().lerp(closeTarget, f);
+    return { pos, target: tgt };
+  } else {
+    // Settle on close-up of orbits
+    return { pos: closePos.clone(), target: closeTarget.clone() };
+  }
+}
+
+function smoothstep(t) {
+  t = Math.max(0, Math.min(1, t));
+  return t * t * (3 - 2 * t);
+}
+
+function startCinematic() {
+  cinematicActive = true;
+  cinematicTime = 0;
+  cinematicStartPos = camera.position.clone();
+  cinematicStartTarget = controls.target.clone();
+  document.getElementById('cine-btn').classList.add('active');
+  document.getElementById('cine-btn').textContent = 'Stop [Esc]';
+}
+
+function stopCinematic() {
+  cinematicActive = false;
+  document.getElementById('cine-btn').classList.remove('active');
+  document.getElementById('cine-btn').textContent = 'Cinematic [C]';
+}
+window.startCinematic = startCinematic;
+
+// Navigation
+window.togglePlanets = () => { showPlanets = !showPlanets; updateFilters(); document.querySelectorAll('.btn')[0].classList.toggle('active'); };
+window.toggleOrbits = () => { showOrbits = !showOrbits; updateFilters(); document.querySelectorAll('.btn')[1].classList.toggle('active'); };
+window.closeInfo = () => { document.getElementById('info-panel').style.display = 'none'; };
+
+window.flyToNearest = () => {
+  const valid = starData.filter(s => s.dist > 0).sort((a, b) => a.dist - b.dist);
+  if (valid.length) flyTo(starIndexByName[valid[0].name]);
+};
+
+window.flyToRichest = () => {
+  const counts = {};
+  planetData.forEach(p => counts[p.parent] = (counts[p.parent] || 0) + 1);
+  const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  if (best) flyTo(starIndexByName[best[0]]);
+};
+
+window.flyToHabitable = () => {
+  const hz = planetData.filter(p => p.sma && p.sma >= 0.7 && p.sma <= 1.5);
+  if (hz.length) {
+    const si = starIndexByName[hz[0].parent];
+    if (si !== undefined) flyTo(si);
+  }
+};
+
+window.resetView = () => {
+  flyTarget = null;
+  camera.position.set(0, 50, 150);
+  controls.target.set(0, 0, 0);
+};
+
+window.updateFilters = updateFilters;
+
+function flyTo(starIndex) {
+  if (starIndex === undefined) return;
+  flyTarget = starPositions[starIndex].clone();
+  flyLerp = 0;
+  showStarInfo(starIndex);
+}
+
+// File loading
+function onFileLoad(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      document.getElementById('loader').style.display = 'none';
+      buildScene(data);
+    } catch (err) {
+      alert('Parse error: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+init();
+
+// Auto-load exo_viz.json from same directory if available
+fetch('exo_viz.json')
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data => {
+    document.getElementById('loader').style.display = 'none';
+    buildScene(data);
+  })
+  .catch(() => {
+    // Fall back to manual file picker
+    console.log('exo_viz.json not found in same directory — use file picker');
+  });
+</script>
+</body>
+</html>

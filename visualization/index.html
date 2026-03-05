@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Self-Computing Universe — Proof Visualization</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #000; color: #ccc; font-family: 'Courier New', monospace; }
+canvas { display: block; }
+
+#ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#ui > * { pointer-events: auto; }
+
+#title-bar {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  text-align: center; font-size: 13px; color: #88aacc; opacity: 0.8;
+  text-shadow: 0 0 10px #336;
+}
+#title-bar h1 { font-size: 16px; letter-spacing: 3px; margin-bottom: 2px; }
+
+#controls {
+  position: absolute; top: 12px; left: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.btn {
+  background: rgba(30,40,60,0.85); border: 1px solid #445; color: #aac;
+  padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 3px;
+  font-family: inherit; transition: background 0.2s;
+}
+.btn:hover { background: rgba(60,80,120,0.9); }
+.btn.active { border-color: #8af; color: #8af; }
+
+#legend {
+  position: absolute; bottom: 12px; left: 12px;
+  background: rgba(10,15,25,0.85); border: 1px solid #334; border-radius: 4px;
+  padding: 10px 14px; font-size: 11px; line-height: 1.8;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+#info-panel {
+  position: absolute; top: 12px; right: 12px; width: 320px;
+  background: rgba(10,15,25,0.92); border: 1px solid #334; border-radius: 4px;
+  padding: 14px; font-size: 11px; line-height: 1.6; display: none; max-height: 80vh; overflow-y: auto;
+}
+#info-panel h2 { font-size: 14px; color: #8af; margin-bottom: 8px; border-bottom: 1px solid #334; padding-bottom: 6px; }
+#info-panel .field { margin-bottom: 4px; }
+#info-panel .label { color: #668; }
+#info-panel .value { color: #bcd; }
+#info-panel .close-btn {
+  position: absolute; top: 8px; right: 10px; cursor: pointer; color: #668; font-size: 16px;
+}
+
+#tooltip {
+  position: absolute; display: none;
+  background: rgba(10,15,25,0.9); border: 1px solid #446; border-radius: 3px;
+  padding: 4px 8px; font-size: 11px; color: #aac; pointer-events: none;
+  white-space: nowrap;
+}
+
+#loader {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  text-align: center; color: #88aacc;
+}
+#loader h2 { font-size: 18px; margin-bottom: 10px; }
+#loader input { margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<div id="ui">
+  <div id="title-bar">
+    <h1>SELF-COMPUTING UNIVERSE</h1>
+    <div id="build-hash"></div>
+  </div>
+
+  <div id="controls">
+    <button class="btn active" onclick="toggleLayer('L1')">L1 Objects</button>
+    <button class="btn active" onclick="toggleLayer('L2')">L2 Witnesses</button>
+    <button class="btn active" onclick="toggleLayer('L3')">L3 Atlas</button>
+    <button class="btn" onclick="startTour()">Proof Tour</button>
+    <button class="btn" onclick="resetCamera()">Reset View</button>
+  </div>
+
+  <div id="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#4488ff"></span> Galaxy (SAT/Spiral)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ff6644"></span> Galaxy (UNSAT/Elliptical)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ffaa22"></span> Star (ArithFind)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#44cc66"></span> Nebula (Table)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#8844cc"></span> Dark Object (Formal)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#ccaa22"></span> Cluster (Dominate)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#00cccc"></span> Filament</div>
+  </div>
+
+  <div id="info-panel">
+    <span class="close-btn" onclick="closeInfo()">&times;</span>
+    <h2 id="info-title"></h2>
+    <div id="info-body"></div>
+  </div>
+
+  <div id="tooltip"></div>
+
+  <div id="loader">
+    <h2>Load Proof Universe</h2>
+    <p>Generate with: <code>cargo run -- viz-export --output viz_universe.json</code></p>
+    <br>
+    <input type="file" id="file-input" accept=".json">
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ─── Globals ───
+let scene, camera, renderer, controls;
+let universeData = null;
+let objects3D = []; // { mesh, data, type, layer }
+let layers = { L1: true, L2: true, L3: true };
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+let touring = false;
+let tourIndex = 0;
+let tourTargets = [];
+let tourLerp = 0;
+
+// ─── Color Palette ───
+const COLORS = {
+  spiralGalaxy: 0x4488ff,
+  ellipticalGalaxy: 0xff6644,
+  star: 0xffaa22,
+  nebula: 0x44cc66,
+  darkObject: 0x8844cc,
+  cluster: 0xccaa22,
+  filament: 0x00cccc,
+  lensingProxy: 0xeeeeff,
+  moonTrue: 0xffd700,
+  moonFalse: 0x88aacc,
+  frontier: 0xff2222,
+  arithPlanet: 0x00ccff,
+  background: 0x000511,
+};
+
+const SPECTRAL_COLORS = [0x9bb0ff, 0xaabfff, 0xcad7ff, 0xf8f7ff, 0xfff4e8, 0xffddb4, 0xffbd6f];
+
+// ─── Init ───
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(COLORS.background);
+  scene.fog = new THREE.FogExp2(COLORS.background, 0.0003);
+
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+  camera.position.set(0, 150, 400);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  document.body.prepend(renderer.domElement);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.maxDistance = 2000;
+
+  // Ambient + directional light
+  scene.add(new THREE.AmbientLight(0x223344, 0.5));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
+  dirLight.position.set(100, 200, 100);
+  scene.add(dirLight);
+
+  // Starfield
+  createStarfield();
+
+  // Events
+  window.addEventListener('resize', onResize);
+  window.addEventListener('click', onClick);
+  window.addEventListener('mousemove', onMouseMove);
+
+  document.getElementById('file-input').addEventListener('change', onFileLoad);
+
+  animate();
+}
+
+function createStarfield() {
+  const geo = new THREE.BufferGeometry();
+  const count = 8000;
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    const r = 1500 + Math.random() * 2000;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+    positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    positions[i*3+2] = r * Math.cos(phi);
+    const brightness = 0.3 + Math.random() * 0.7;
+    colors[i*3] = brightness; colors[i*3+1] = brightness; colors[i*3+2] = brightness + Math.random() * 0.1;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.8, vertexColors: true, transparent: true, opacity: 0.7 });
+  scene.add(new THREE.Points(geo, mat));
+}
+
+// ─── Coordinate Normalization ───
+function normalizeCoords(data) {
+  // Collect all coordinates
+  const allCoords = [];
+  const addCoords = (x, y, z) => allCoords.push([Number(x), Number(y), Number(z)]);
+
+  data.catalog.galaxies.forEach(g => addCoords(g.coord_x, g.coord_y, g.coord_z));
+  data.catalog.stars.forEach(s => addCoords(s.coord_x, s.coord_y, s.coord_z));
+  data.catalog.nebulae.forEach(n => addCoords(n.coord_x, n.coord_y, n.coord_z));
+  data.catalog.dark_objects.forEach(d => addCoords(d.coord_x, d.coord_y, d.coord_z));
+  data.catalog.clusters.forEach(c => addCoords(c.coord_x, c.coord_y, c.coord_z));
+
+  if (allCoords.length === 0) return { scale: 1, offset: [0,0,0] };
+
+  // Find bounds
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const [x,y,z] of allCoords) {
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+    minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+  }
+
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
+  const range = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 1);
+  const targetSize = 500;
+  return { scale: targetSize / range, offset: [cx, cy, cz] };
+}
+
+function toScene(x, y, z, norm) {
+  return new THREE.Vector3(
+    (Number(x) - norm.offset[0]) * norm.scale,
+    (Number(y) - norm.offset[1]) * norm.scale,
+    (Number(z) - norm.offset[2]) * norm.scale
+  );
+}
+
+function ratToFloat(r) {
+  if (!r) return 0;
+  return r.num / r.den;
+}
+
+// ─── Build Universe ───
+function buildUniverse(data) {
+  universeData = data;
+  const norm = normalizeCoords(data);
+
+  document.getElementById('build-hash').textContent = 'BuildHash: ' + data.build_hash.substring(0, 16) + '...';
+
+  // L1: Galaxies
+  data.catalog.galaxies.forEach(g => {
+    const pos = toScene(g.coord_x, g.coord_y, g.coord_z, norm);
+    const isSpiral = g.morphology === 'Spiral';
+    const color = isSpiral ? COLORS.spiralGalaxy : COLORS.ellipticalGalaxy;
+    const radius = Math.max(ratToFloat(g.radius_kpc) * 8, 6);
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    if (isSpiral) {
+      createSpiralGalaxy(group, g.arm_count || 2, radius, color);
+    } else {
+      createEllipticalGalaxy(group, radius, color);
+    }
+
+    // Glow core
+    const glowGeo = new THREE.SphereGeometry(radius * 0.3, 16, 16);
+    const glowMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4 });
+    group.add(new THREE.Mesh(glowGeo, glowMat));
+
+    scene.add(group);
+    objects3D.push({ mesh: group, data: g, type: 'galaxy', layer: 'L1', pos });
+  });
+
+  // L1: Stars
+  data.catalog.stars.forEach(s => {
+    const pos = toScene(s.coord_x, s.coord_y, s.coord_z, norm);
+    const sc = s.spectral_class % 7;
+    const color = SPECTRAL_COLORS[sc];
+    const size = 3 + ratToFloat(s.luminosity) * 2;
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    const geo = new THREE.SphereGeometry(size, 16, 16);
+    const mat = new THREE.MeshBasicMaterial({ color });
+    group.add(new THREE.Mesh(geo, mat));
+
+    // Point light
+    const light = new THREE.PointLight(color, 0.5, 80);
+    group.add(light);
+
+    scene.add(group);
+    objects3D.push({ mesh: group, data: s, type: 'star', layer: 'L1', pos });
+  });
+
+  // L1: Nebulae
+  data.catalog.nebulae.forEach(n => {
+    const pos = toScene(n.coord_x, n.coord_y, n.coord_z, norm);
+    const radius = Math.max(ratToFloat(n.radius_ly) * 3, 5);
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    // Translucent sphere
+    const geo = new THREE.SphereGeometry(radius, 24, 24);
+    const mat = new THREE.MeshBasicMaterial({ color: COLORS.nebula, transparent: true, opacity: 0.15, wireframe: false });
+    group.add(new THREE.Mesh(geo, mat));
+
+    // Inner glow particles
+    const pGeo = new THREE.BufferGeometry();
+    const pCount = 200;
+    const pPos = new Float32Array(pCount * 3);
+    for (let i = 0; i < pCount; i++) {
+      const r = Math.random() * radius;
+      const t = Math.random() * Math.PI * 2;
+      const p = Math.acos(2 * Math.random() - 1);
+      pPos[i*3] = r * Math.sin(p) * Math.cos(t);
+      pPos[i*3+1] = r * Math.sin(p) * Math.sin(t);
+      pPos[i*3+2] = r * Math.cos(p);
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    const pMat = new THREE.PointsMaterial({ color: COLORS.nebula, size: 0.6, transparent: true, opacity: 0.5 });
+    group.add(new THREE.Points(pGeo, pMat));
+
+    scene.add(group);
+    objects3D.push({ mesh: group, data: n, type: 'nebula', layer: 'L1', pos });
+  });
+
+  // L1: Dark Objects + Lensing
+  data.catalog.dark_objects.forEach(d => {
+    const pos = toScene(d.coord_x, d.coord_y, d.coord_z, norm);
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    // Distortion ring (torus)
+    const torusGeo = new THREE.TorusGeometry(8, 0.4, 8, 32);
+    const torusMat = new THREE.MeshBasicMaterial({ color: COLORS.darkObject, transparent: true, opacity: 0.4 });
+    const torus = new THREE.Mesh(torusGeo, torusMat);
+    torus.rotation.x = Math.PI / 2;
+    group.add(torus);
+
+    // Inner void
+    const voidGeo = new THREE.SphereGeometry(3, 16, 16);
+    const voidMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    group.add(new THREE.Mesh(voidGeo, voidMat));
+
+    scene.add(group);
+    objects3D.push({ mesh: group, data: d, type: 'dark_object', layer: 'L1', pos });
+  });
+
+  // L1: Clusters
+  data.catalog.clusters.forEach(c => {
+    const pos = toScene(c.coord_x, c.coord_y, c.coord_z, norm);
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    const count = Math.min(c.member_count || 20, 60);
+    const radius = Math.max(ratToFloat(c.radius_pc) * 2, 5);
+    const pGeo = new THREE.BufferGeometry();
+    const pPos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const r = Math.random() * radius;
+      const t = Math.random() * Math.PI * 2;
+      const p = Math.acos(2 * Math.random() - 1);
+      pPos[i*3] = r * Math.sin(p) * Math.cos(t);
+      pPos[i*3+1] = r * Math.sin(p) * Math.sin(t);
+      pPos[i*3+2] = r * Math.cos(p);
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    const pMat = new THREE.PointsMaterial({ color: COLORS.cluster, size: 1.5 });
+    group.add(new THREE.Points(pGeo, pMat));
+
+    scene.add(group);
+    objects3D.push({ mesh: group, data: c, type: 'cluster', layer: 'L1', pos });
+  });
+
+  // L2: SAT Witness Moons
+  data.sat_witnesses.forEach(sw => {
+    const parentGal = data.catalog.galaxies.find(g => g.name === sw.parent_galaxy_name);
+    if (!parentGal) return;
+    const parentPos = toScene(parentGal.coord_x, parentGal.coord_y, parentGal.coord_z, norm);
+
+    sw.moons.forEach(moon => {
+      const ringRadius = (moon.parent_ring_index + 1) * 4;
+      const angle = (moon.moon_index / Math.max(sw.moons.length, 1)) * Math.PI * 2;
+      const inclRad = moon.inclination_milli_deg / 1000 * Math.PI / 180;
+
+      const group = new THREE.Group();
+      const moonGeo = new THREE.SphereGeometry(0.8, 8, 8);
+      const moonColor = moon.bit_value ? COLORS.moonTrue : COLORS.moonFalse;
+      const moonMat = new THREE.MeshBasicMaterial({ color: moonColor });
+      const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+      moonMesh.position.set(
+        parentPos.x + Math.cos(angle) * ringRadius,
+        parentPos.y + Math.sin(inclRad) * ringRadius * 0.3,
+        parentPos.z + Math.sin(angle) * ringRadius
+      );
+      group.add(moonMesh);
+      group.userData = { parentPos, ringRadius, angle, inclRad, moonMesh, speed: 0.3 + moon.moon_index * 0.1 };
+
+      scene.add(group);
+      objects3D.push({ mesh: group, data: { ...moon, parent: sw.parent_galaxy_name, qid: sw.qid_hex }, type: 'witness_moon', layer: 'L2', pos: moonMesh.position.clone() });
+    });
+
+    // Clause ring outlines
+    sw.clause_rings.forEach(ring => {
+      const ringRadius = (ring.clause_index + 1) * 4;
+      const ringGeo = new THREE.RingGeometry(ringRadius - 0.1, ringRadius + 0.1, 64);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: ring.is_satisfied ? 0x44ff66 : 0xff4444,
+        transparent: true, opacity: 0.2, side: THREE.DoubleSide
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.position.copy(parentPos);
+      ringMesh.rotation.x = Math.PI / 2;
+      scene.add(ringMesh);
+      objects3D.push({ mesh: ringMesh, data: ring, type: 'clause_ring', layer: 'L2' });
+    });
+  });
+
+  // L2: Arith Witness Planets
+  data.arith_witnesses.forEach(aw => {
+    const parentStar = data.catalog.stars.find(s => s.name === aw.parent_star_name);
+    if (!parentStar) return;
+    const parentPos = toScene(parentStar.coord_x, parentStar.coord_y, parentStar.coord_z, norm);
+
+    // Witness planet
+    const pGeo = new THREE.SphereGeometry(1.5, 12, 12);
+    const pMat = new THREE.MeshBasicMaterial({ color: COLORS.arithPlanet });
+    const planet = new THREE.Mesh(pGeo, pMat);
+    const orbitRadius = 10;
+    planet.position.set(parentPos.x + orbitRadius, parentPos.y, parentPos.z);
+    planet.userData = { parentPos, orbitRadius, speed: 0.5, angle: 0 };
+    scene.add(planet);
+    objects3D.push({ mesh: planet, data: aw, type: 'arith_planet', layer: 'L2', pos: planet.position.clone() });
+
+    // Orbit ring
+    const orbitGeo = new THREE.RingGeometry(orbitRadius - 0.05, orbitRadius + 0.05, 64);
+    const orbitMat = new THREE.MeshBasicMaterial({ color: COLORS.arithPlanet, transparent: true, opacity: 0.15, side: THREE.DoubleSide });
+    const orbitMesh = new THREE.Mesh(orbitGeo, orbitMat);
+    orbitMesh.position.copy(parentPos);
+    orbitMesh.rotation.x = Math.PI / 2;
+    scene.add(orbitMesh);
+
+    // Decoy orbit (slightly different radius, dimmer)
+    const decoyRadius = orbitRadius * 1.3;
+    const dGeo = new THREE.RingGeometry(decoyRadius - 0.05, decoyRadius + 0.05, 64);
+    const dMat = new THREE.MeshBasicMaterial({ color: 0xff6666, transparent: true, opacity: 0.08, side: THREE.DoubleSide });
+    const dMesh = new THREE.Mesh(dGeo, dMat);
+    dMesh.position.copy(parentPos);
+    dMesh.rotation.x = Math.PI / 2;
+    scene.add(dMesh);
+    objects3D.push({ mesh: dMesh, data: { decoy: true, ...aw }, type: 'decoy_orbit', layer: 'L2' });
+  });
+
+  // L2: Lensing Proxies
+  data.lensing_proxies.forEach(lp => {
+    const pos = toScene(lp.coord_x, lp.coord_y, lp.coord_z, norm);
+    const geo = new THREE.SphereGeometry(1.5, 12, 12);
+    const mat = new THREE.MeshBasicMaterial({ color: COLORS.lensingProxy, transparent: true, opacity: 0.6 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(pos);
+    scene.add(mesh);
+    objects3D.push({ mesh, data: lp, type: 'lensing_proxy', layer: 'L2', pos });
+  });
+
+  // L3: Filaments
+  data.atlas.filaments.forEach(f => {
+    const fromObj = findObjectByQid(data, f.from_qid_hex);
+    const toObj = findObjectByQid(data, f.to_qid_hex);
+    if (!fromObj || !toObj) return;
+
+    const fromPos = toScene(fromObj.coord_x, fromObj.coord_y, fromObj.coord_z, norm);
+    const toPos = toScene(toObj.coord_x, toObj.coord_y, toObj.coord_z, norm);
+
+    const points = [fromPos, toPos];
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+    const lineMat = new THREE.LineBasicMaterial({ color: COLORS.filament, transparent: true, opacity: 0.12 });
+    const line = new THREE.Line(lineGeo, lineMat);
+    scene.add(line);
+    objects3D.push({ mesh: line, data: f, type: 'filament', layer: 'L3' });
+  });
+
+  // L3: Frontier Black Holes
+  data.atlas.frontiers.forEach(f => {
+    const pos = toScene(f.coord_x, f.coord_y, f.coord_z, norm);
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    // Black sphere
+    const geo = new THREE.SphereGeometry(4, 16, 16);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    group.add(new THREE.Mesh(geo, mat));
+
+    // Accretion disk
+    const diskGeo = new THREE.TorusGeometry(7, 1.2, 8, 32);
+    const diskMat = new THREE.MeshBasicMaterial({ color: COLORS.frontier, transparent: true, opacity: 0.35 });
+    const disk = new THREE.Mesh(diskGeo, diskMat);
+    disk.rotation.x = Math.PI / 3;
+    group.add(disk);
+
+    scene.add(group);
+    objects3D.push({ mesh: group, data: f, type: 'frontier', layer: 'L3', pos });
+  });
+
+  // L3: Domain Galaxy labels (as rings)
+  data.atlas.domain_galaxies.forEach(dg => {
+    const pos = toScene(dg.coord_x, dg.coord_y, dg.coord_z, norm);
+    const radius = Math.max(dg.member_count * 3, 15);
+    const ringGeo = new THREE.RingGeometry(radius - 0.2, radius + 0.2, 64);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x445566, transparent: true, opacity: 0.08, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.copy(pos);
+    ring.rotation.x = Math.PI / 2;
+    scene.add(ring);
+    objects3D.push({ mesh: ring, data: dg, type: 'domain_galaxy', layer: 'L3' });
+  });
+
+  // Build tour targets
+  tourTargets = objects3D
+    .filter(o => o.layer === 'L1' && o.pos)
+    .map(o => o.pos.clone());
+}
+
+function findObjectByQid(data, qid_hex) {
+  const prefix = qid_hex.substring(0, 8);
+  const all = [
+    ...data.catalog.galaxies,
+    ...data.catalog.stars,
+    ...data.catalog.nebulae,
+    ...data.catalog.dark_objects,
+    ...data.catalog.clusters,
+  ];
+  return all.find(o => o.qid_hex && o.qid_hex.startsWith(prefix));
+}
+
+// ─── Galaxy Generators ───
+function createSpiralGalaxy(group, armCount, radius, color) {
+  const geo = new THREE.BufferGeometry();
+  const count = 600;
+  const pos = new Float32Array(count * 3);
+  const cols = new Float32Array(count * 3);
+  const c = new THREE.Color(color);
+
+  for (let i = 0; i < count; i++) {
+    const arm = i % Math.max(armCount, 1);
+    const t = (i / count) * 4;
+    const armAngle = (arm / Math.max(armCount, 1)) * Math.PI * 2;
+    const angle = armAngle + t * 1.2;
+    const r = t * radius * 0.25;
+    const spread = t * 0.8;
+
+    pos[i*3] = Math.cos(angle) * r + (Math.random() - 0.5) * spread;
+    pos[i*3+1] = (Math.random() - 0.5) * spread * 0.2;
+    pos[i*3+2] = Math.sin(angle) * r + (Math.random() - 0.5) * spread;
+
+    const brightness = 0.4 + (1 - t/4) * 0.6;
+    cols[i*3] = c.r * brightness;
+    cols[i*3+1] = c.g * brightness;
+    cols[i*3+2] = c.b * brightness;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.7, vertexColors: true, transparent: true, opacity: 0.85 });
+  group.add(new THREE.Points(geo, mat));
+}
+
+function createEllipticalGalaxy(group, radius, color) {
+  const geo = new THREE.BufferGeometry();
+  const count = 400;
+  const pos = new Float32Array(count * 3);
+  const cols = new Float32Array(count * 3);
+  const c = new THREE.Color(color);
+
+  for (let i = 0; i < count; i++) {
+    const r = Math.pow(Math.random(), 0.5) * radius;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    pos[i*3] = r * Math.sin(phi) * Math.cos(theta) * 1.4;
+    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta) * 0.6;
+    pos[i*3+2] = r * Math.cos(phi);
+
+    const brightness = 0.3 + (1 - r/radius) * 0.7;
+    cols[i*3] = c.r * brightness;
+    cols[i*3+1] = c.g * brightness;
+    cols[i*3+2] = c.b * brightness;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.6, vertexColors: true, transparent: true, opacity: 0.8 });
+  group.add(new THREE.Points(geo, mat));
+}
+
+// ─── Animation ───
+let clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const elapsed = clock.getElapsedTime();
+
+  // Rotate galaxies
+  objects3D.filter(o => o.type === 'galaxy').forEach(o => {
+    if (o.mesh.visible) o.mesh.rotation.y += dt * 0.05;
+  });
+
+  // Rotate dark object rings
+  objects3D.filter(o => o.type === 'dark_object').forEach(o => {
+    if (o.mesh.visible) {
+      o.mesh.children.forEach(c => {
+        if (c.geometry && c.geometry.type === 'TorusGeometry') {
+          c.rotation.z += dt * 0.3;
+        }
+      });
+    }
+  });
+
+  // Orbit arith planets
+  objects3D.filter(o => o.type === 'arith_planet').forEach(o => {
+    const ud = o.mesh.userData;
+    if (ud.parentPos) {
+      ud.angle += dt * ud.speed;
+      o.mesh.position.set(
+        ud.parentPos.x + Math.cos(ud.angle) * ud.orbitRadius,
+        ud.parentPos.y,
+        ud.parentPos.z + Math.sin(ud.angle) * ud.orbitRadius
+      );
+    }
+  });
+
+  // Orbit witness moons
+  objects3D.filter(o => o.type === 'witness_moon').forEach(o => {
+    const ud = o.mesh.userData;
+    if (ud && ud.moonMesh && ud.parentPos) {
+      ud.angle = (ud.angle || 0) + dt * ud.speed;
+      ud.moonMesh.position.set(
+        ud.parentPos.x + Math.cos(ud.angle) * ud.ringRadius,
+        ud.parentPos.y + Math.sin(ud.inclRad) * Math.sin(ud.angle) * ud.ringRadius * 0.3,
+        ud.parentPos.z + Math.sin(ud.angle) * ud.ringRadius
+      );
+    }
+  });
+
+  // Pulse frontier accretion disks
+  objects3D.filter(o => o.type === 'frontier').forEach(o => {
+    const disk = o.mesh.children[1];
+    if (disk) disk.rotation.z = elapsed * 0.5;
+  });
+
+  // Tour camera
+  if (touring && tourTargets.length > 1) {
+    tourLerp += dt * 0.15;
+    if (tourLerp >= 1) {
+      tourLerp = 0;
+      tourIndex = (tourIndex + 1) % tourTargets.length;
+    }
+    const from = tourTargets[tourIndex];
+    const to = tourTargets[(tourIndex + 1) % tourTargets.length];
+    const target = new THREE.Vector3().lerpVectors(from, to, tourLerp);
+    const camOffset = new THREE.Vector3(30, 20, 30);
+    camera.position.lerp(target.clone().add(camOffset), dt * 0.8);
+    controls.target.lerp(target, dt * 0.8);
+  }
+
+  // Layer visibility
+  objects3D.forEach(o => {
+    if (o.layer && o.mesh) {
+      o.mesh.visible = layers[o.layer];
+    }
+  });
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// ─── Events ───
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function onClick(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  const clickable = objects3D
+    .filter(o => o.mesh.visible && o.data && o.type !== 'filament' && o.type !== 'clause_ring' && o.type !== 'decoy_orbit' && o.type !== 'domain_galaxy')
+    .flatMap(o => {
+      const meshes = [];
+      if (o.mesh.isMesh) meshes.push({ mesh: o.mesh, obj: o });
+      if (o.mesh.isGroup) o.mesh.traverse(c => { if (c.isMesh) meshes.push({ mesh: c, obj: o }); });
+      return meshes;
+    });
+
+  const intersects = raycaster.intersectObjects(clickable.map(c => c.mesh));
+  if (intersects.length > 0) {
+    const hit = clickable.find(c => c.mesh === intersects[0].object);
+    if (hit) showInfo(hit.obj);
+  }
+}
+
+function onMouseMove(event) {
+  const tooltip = document.getElementById('tooltip');
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  const hoverable = objects3D
+    .filter(o => o.mesh.visible && o.data && o.layer === 'L1')
+    .flatMap(o => {
+      const meshes = [];
+      if (o.mesh.isMesh) meshes.push({ mesh: o.mesh, obj: o });
+      if (o.mesh.isGroup) o.mesh.traverse(c => { if (c.isMesh) meshes.push({ mesh: c, obj: o }); });
+      return meshes;
+    });
+
+  const intersects = raycaster.intersectObjects(hoverable.map(c => c.mesh));
+  if (intersects.length > 0) {
+    const hit = hoverable.find(c => c.mesh === intersects[0].object);
+    if (hit) {
+      tooltip.style.display = 'block';
+      tooltip.style.left = event.clientX + 12 + 'px';
+      tooltip.style.top = event.clientY - 10 + 'px';
+      tooltip.textContent = hit.obj.data.name || hit.obj.data.proxy_name || 'Object';
+    }
+  } else {
+    tooltip.style.display = 'none';
+  }
+}
+
+function showInfo(obj) {
+  const panel = document.getElementById('info-panel');
+  const title = document.getElementById('info-title');
+  const body = document.getElementById('info-body');
+
+  panel.style.display = 'block';
+  const d = obj.data;
+
+  const typeLabels = {
+    galaxy: 'Galaxy (BoolCnf)',
+    star: 'Star (ArithFind)',
+    nebula: 'Nebula (Table)',
+    dark_object: 'Dark Object (FormalProof)',
+    cluster: 'Star Cluster (Dominate)',
+    lensing_proxy: 'Lensing Proxy',
+    arith_planet: 'Witness Planet',
+    witness_moon: 'Witness Moon',
+    frontier: 'Frontier Black Hole',
+  };
+
+  title.textContent = d.name || d.proxy_name || d.parent_star_name || `Moon v${d.variable_index}`;
+
+  let html = `<div class="field"><span class="label">Type: </span><span class="value">${typeLabels[obj.type] || obj.type}</span></div>`;
+
+  if (d.qid_hex) html += `<div class="field"><span class="label">QID: </span><span class="value">${d.qid_hex.substring(0, 16)}...</span></div>`;
+  if (d.morphology) html += `<div class="field"><span class="label">Morphology: </span><span class="value">${d.morphology}</span></div>`;
+  if (d.arm_count) html += `<div class="field"><span class="label">Arms: </span><span class="value">${d.arm_count}</span></div>`;
+  if (d.radius_kpc) html += `<div class="field"><span class="label">Radius: </span><span class="value">${ratToFloat(d.radius_kpc).toFixed(2)} kpc</span></div>`;
+  if (d.spectral_class !== undefined) html += `<div class="field"><span class="label">Spectral Class: </span><span class="value">${['O','B','A','F','G','K','M'][d.spectral_class % 7]}</span></div>`;
+  if (d.luminosity) html += `<div class="field"><span class="label">Luminosity: </span><span class="value">${ratToFloat(d.luminosity).toFixed(2)}</span></div>`;
+  if (d.radius_ly) html += `<div class="field"><span class="label">Radius: </span><span class="value">${ratToFloat(d.radius_ly).toFixed(2)} ly</span></div>`;
+  if (d.density) html += `<div class="field"><span class="label">Density: </span><span class="value">${ratToFloat(d.density).toFixed(4)}</span></div>`;
+  if (d.reason_inadmissible) html += `<div class="field"><span class="label">Inadmissible: </span><span class="value">${d.reason_inadmissible}</span></div>`;
+  if (d.mass_estimate) html += `<div class="field"><span class="label">Mass: </span><span class="value">${ratToFloat(d.mass_estimate).toExponential(2)}</span></div>`;
+  if (d.member_count) html += `<div class="field"><span class="label">Members: </span><span class="value">${d.member_count}</span></div>`;
+  if (d.witness_value !== undefined) html += `<div class="field"><span class="label">Witness Value: </span><span class="value">x = ${d.witness_value}</span></div>`;
+  if (d.period_exact) html += `<div class="field"><span class="label">Period: </span><span class="value">${d.period_exact.num}/${d.period_exact.den}</span></div>`;
+  if (d.decoy_orbit) html += `<div class="field"><span class="label">Decoy Orbit: </span><span class="value">${d.decoy_orbit.num}/${d.decoy_orbit.den} (invalid)</span></div>`;
+  if (d.bit_value !== undefined) html += `<div class="field"><span class="label">Value: </span><span class="value">${d.bit_value ? 'TRUE' : 'FALSE'}</span></div>`;
+  if (d.variable_index !== undefined) html += `<div class="field"><span class="label">Variable: </span><span class="value">x${d.variable_index}</span></div>`;
+  if (d.inclination_milli_deg !== undefined) html += `<div class="field"><span class="label">Inclination: </span><span class="value">${d.inclination_milli_deg / 1000}&deg;</span></div>`;
+  if (d.lensing_mass) html += `<div class="field"><span class="label">Lensing Mass: </span><span class="value">${ratToFloat(d.lensing_mass).toFixed(2)}</span></div>`;
+  if (d.einstein_radius_milli_arcsec) html += `<div class="field"><span class="label">Einstein Radius: </span><span class="value">${d.einstein_radius_milli_arcsec / 1000} arcsec</span></div>`;
+  if (d.event_horizon_milli_ly) html += `<div class="field"><span class="label">Event Horizon: </span><span class="value">${d.event_horizon_milli_ly / 1000} ly</span></div>`;
+  if (d.cost) html += `<div class="field"><span class="label">Cost: </span><span class="value">${d.cost}</span></div>`;
+
+  if (d.coord_x !== undefined) {
+    html += `<div class="field" style="margin-top:8px;border-top:1px solid #334;padding-top:6px"><span class="label">Coordinates</span></div>`;
+    html += `<div class="field"><span class="label">X: </span><span class="value">${d.coord_x}</span></div>`;
+    html += `<div class="field"><span class="label">Y: </span><span class="value">${d.coord_y}</span></div>`;
+    html += `<div class="field"><span class="label">Z: </span><span class="value">${d.coord_z}</span></div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+function closeInfo() {
+  document.getElementById('info-panel').style.display = 'none';
+}
+
+// ─── Controls ───
+window.toggleLayer = function(layer) {
+  layers[layer] = !layers[layer];
+  const btns = document.querySelectorAll('.btn');
+  btns.forEach(btn => {
+    if (btn.textContent.includes(layer)) {
+      btn.classList.toggle('active', layers[layer]);
+    }
+  });
+};
+
+window.startTour = function() {
+  touring = !touring;
+  tourIndex = 0;
+  tourLerp = 0;
+  const btn = [...document.querySelectorAll('.btn')].find(b => b.textContent === 'Proof Tour');
+  if (btn) btn.classList.toggle('active', touring);
+};
+
+window.resetCamera = function() {
+  touring = false;
+  camera.position.set(0, 150, 400);
+  controls.target.set(0, 0, 0);
+  const btn = [...document.querySelectorAll('.btn')].find(b => b.textContent === 'Proof Tour');
+  if (btn) btn.classList.remove('active');
+};
+
+window.closeInfo = closeInfo;
+
+// ─── File Loading ───
+function onFileLoad(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      document.getElementById('loader').style.display = 'none';
+      buildUniverse(data);
+    } catch (err) {
+      alert('Failed to parse JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ─── Start ───
+init();
+</script>
+</body>
+</html>

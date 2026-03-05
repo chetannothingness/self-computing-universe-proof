@@ -133,6 +133,13 @@ enum Commands {
         #[arg(long)]
         output: String,
     },
+
+    /// Export the proof universe as JSON for the 3D web visualization.
+    VizExport {
+        /// Output path for the JSON file.
+        #[arg(long, default_value = "viz_universe.json")]
+        output: String,
+    },
 }
 
 fn main() {
@@ -155,6 +162,7 @@ fn main() {
         Commands::ExoPatch { output } => cmd_exo_patch(&output),
         Commands::ExoVerify { addon } => cmd_exo_verify(&addon),
         Commands::ExoPak { output } => cmd_exo_pak(&output),
+        Commands::VizExport { output } => cmd_viz_export(&output),
     }
 }
 
@@ -1175,6 +1183,112 @@ fn read_dir_recursive_inner(
             }
         }
     }
+}
+
+fn cmd_viz_export(output_path: &str) {
+    use kernel_spaceengine::CatalogGenerator;
+    use kernel_spaceengine::atlas_builder::AtlasBuilder;
+    use kernel_spaceengine::witness_encoder::WitnessEncoder;
+    use kernel_spaceengine::verifier::SpaceEngineVerifier;
+    use kernel_contracts::contract::EvalSpec;
+
+    println!("=== KernelTOE: Viz Export ===");
+
+    // Step 1: Build the TOE witness class (26 contracts).
+    let (_class_def, contracts) = toe::build_witness_class();
+    println!("  Witness class: {} contracts", contracts.len());
+
+    // Step 2: Solve all contracts.
+    let gm_suite = GoldMasterSuite::v1();
+    let (build_hash, _gm_outputs) = compute_build_hash(&gm_suite);
+    let mut ledger = kernel_ledger::Ledger::new();
+
+    let mut outputs = Vec::new();
+    for contract in &contracts {
+        let mut solver = Solver::new();
+        let output = solver.solve(contract);
+        outputs.push(output);
+    }
+    println!("  Solved: {} contracts", outputs.len());
+
+    // Step 3: Generate catalog.
+    let catalog = CatalogGenerator::generate(&contracts, &outputs, build_hash, &mut ledger);
+    let sc_files = CatalogGenerator::emit_sc_files(&catalog);
+    let merkle_root = SpaceEngineVerifier::compute_catalog_merkle_root(&sc_files);
+
+    // Step 4: Generate atlas.
+    let atlas = AtlasBuilder::build(&contracts, &outputs, &merkle_root, &mut ledger);
+
+    // Step 5: Generate witness data.
+    let mut sat_witnesses = Vec::new();
+    let mut unsat_witnesses = Vec::new();
+    let mut arith_witnesses = Vec::new();
+
+    for (contract, output) in contracts.iter().zip(outputs.iter()) {
+        let qid_hex = hash::hex(&contract.qid);
+        let prefix = &qid_hex[..8.min(qid_hex.len())];
+
+        match &contract.eval {
+            EvalSpec::BoolCnf { .. } => {
+                let galaxy_name = format!("KG-{}", prefix);
+                if let Some(w) = WitnessEncoder::encode_sat_witness(contract, output, &galaxy_name, &mut ledger) {
+                    sat_witnesses.push(w);
+                }
+                if let Some(w) = WitnessEncoder::encode_unsat_witness(contract, output, &galaxy_name, &mut ledger) {
+                    unsat_witnesses.push(w);
+                }
+            }
+            EvalSpec::ArithFind { .. } => {
+                let star_name = format!("KS-{}", prefix);
+                if let Some(w) = WitnessEncoder::encode_arith_witness(contract, output, &star_name, &mut ledger) {
+                    arith_witnesses.push(w);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let lensing_proxies = WitnessEncoder::encode_dark_lensing(&catalog.dark_objects, &mut ledger);
+
+    println!("  Galaxies: {}, Stars: {}, Nebulae: {}, Dark: {}, Clusters: {}",
+        catalog.galaxies.len(), catalog.stars.len(), catalog.nebulae.len(),
+        catalog.dark_objects.len(), catalog.clusters.len());
+    println!("  SAT witnesses: {}, UNSAT witnesses: {}, Arith witnesses: {}, Lensing: {}",
+        sat_witnesses.len(), unsat_witnesses.len(), arith_witnesses.len(), lensing_proxies.len());
+    println!("  Atlas domains: {}, Filaments: {}, Frontiers: {}",
+        atlas.domain_galaxies.len(), atlas.filaments.len(), atlas.frontiers.len());
+
+    // Step 6: Serialize to JSON.
+    let export = serde_json::json!({
+        "build_hash": hash::hex(&build_hash),
+        "merkle_root": hash::hex(&merkle_root),
+        "catalog": {
+            "stars": catalog.stars,
+            "galaxies": catalog.galaxies,
+            "nebulae": catalog.nebulae,
+            "dark_objects": catalog.dark_objects,
+            "clusters": catalog.clusters,
+        },
+        "atlas": {
+            "center_x": atlas.center_x,
+            "center_y": atlas.center_y,
+            "center_z": atlas.center_z,
+            "domain_galaxies": atlas.domain_galaxies,
+            "index_stars": atlas.index_stars,
+            "filaments": atlas.filaments,
+            "frontiers": atlas.frontiers,
+        },
+        "sat_witnesses": sat_witnesses,
+        "unsat_witnesses": unsat_witnesses,
+        "arith_witnesses": arith_witnesses,
+        "lensing_proxies": lensing_proxies,
+    });
+
+    let json = serde_json::to_string_pretty(&export).expect("Failed to serialize");
+    fs::write(output_path, &json).expect("Failed to write JSON");
+
+    println!("  Exported to: {}", output_path);
+    println!("  JSON size: {} bytes", json.len());
 }
 
 fn cmd_jmcheck(capability_path: &str) {
