@@ -1,0 +1,9 @@
+{
+  "gap_id": "gap_006",
+  "gap_hash": "pending_computation",
+  "blocks": ["bsd_full"],
+  "statement": "Certified L-function order of vanishing computation at s=1 for general E/Q",
+  "schema_tried": "CertifiedNumerics",
+  "status": "OPEN",
+  "notes": "Hasse bounds for #E(F_p) are FRC-admissible; full L-function computation at s=1 is not"
+}

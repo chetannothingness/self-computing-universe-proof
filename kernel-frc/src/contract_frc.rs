@@ -240,6 +240,7 @@ pub fn build_contract_frc(
         b_star,
         reduction_chain: vec![reduction_step],
         proof_hash: ProofEq::compute_hash(&contract.qid, &prog_hash, b_star, &[]),
+        lean_proof: None,
     };
 
     // Step 4: ProofTotal — derived from program structure
@@ -252,6 +253,7 @@ pub fn build_contract_frc(
         b_star,
         halting_argument: halting_argument.clone(),
         proof_hash: ProofTotal::compute_hash(&prog_hash, b_star, &halting_argument),
+        lean_proof: None,
     };
 
     // Step 5: Execute VM to verify

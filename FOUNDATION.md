@@ -246,60 +246,303 @@ This is A0 applied one meta-level higher: "truth" of infinite-quantifier claims 
 
 ---
 
-## 13. Final solver gate (no Ω)
+## 13. Π-Normal Form: Truth as Normalization (the static universe theorem)
 
-Given contract Q compiled to statement S:
+§7 established that truth Π is a quotient: Π(L) = D₀ / ≡\_L. §12 established that admissible truths reduce to finite computations via FRC. What remains: HOW is Π computed? The answer: **normalization**. The kernel is not a solver that searches for answers. It is a normalizer that projects every term to the unique canonical representative of its equivalence class.
 
-1. Compute FRC(S).
-2. If it exists: run C to completion under B\*, verify proofs, output:
-   - **UNIQUE** (proof or counterexample), or
-   - **UNSAT** (contract contradiction, minimal core).
-3. If it does not exist: output **INVALID** with a minimal missing-lemma witness (the first unprovable subgoal in the reduction search).
+### 13.1 The contract language L as a term algebra
 
-So the kernel decides every admissible question and rejects the rest as "not a distinction inside ⊥."
+Define the contract language L as a sorted term algebra with the following signature:
+
+**Atomic terms:**
+- Constants: c ∈ ℤ (integer literals)
+- Variables: x_i (de Bruijn indexed)
+- Status terms: UNIQUE(w), UNSAT(w), STUCK(w) where w is a witness term
+
+**Operators (closed under composition):**
+- Arithmetic: +, −, ×, div, mod, neg, pow, abs, sqrt
+- Comparison: ≤, <, =, ≠
+- Logic: ∧, ∨, ¬, →
+- Bounded quantifiers: ∀\_{[a,b]}, ∃\_{[a,b]} (where a, b are terms of L, not external parameters)
+- Number-theoretic primitives: isPrime, divisorSum, möbius, collatzReaches1, erdősStrausHolds, fourSquares, mertensBelow, fltHolds
+- Analytic: intervalBound, certifiedSum
+
+**Fixed-point operators (induction/coinduction as terms, not meta-talk):**
+- lfp(F): least fixed point of monotone operator F
+- Induction certificate: IRC(I, Base, Step, Link) — the invariant recurrence certificate as a first-class term
+- FRC certificate: FRC(C, B\*, ProofEq, ProofTotal) — the finite reduction certificate as a term
+
+**Contract constructors:**
+- BoolCnf(vars, clauses), ArithFind(coeffs, target, lo, hi), Table(entries), etc.
+
+L is:
+- **Finite syntax**: every term has finite representation (self-delimiting, as in §2).
+- **Total evaluation**: every ground term evaluates to a value (as in §3).
+- **Closed under composition**: every closure operation in §5.2 is an operator of L.
+- **Supports fixed points**: induction and coinduction are operators in L, not external reasoning.
+
+### 13.2 Rewrite rules R (the only dynamics)
+
+The only dynamics of the kernel are directed equations:
+
+ℓ → r
+
+where ℓ is a term pattern (with metavariables) and r is the reduced form (every metavariable of r appears in ℓ). Each rule ships with a checked proof of semantic preservation:
+
+**Sound(ℓ → r): ⟦ℓ⟧ = ⟦r⟧**
+
+where ⟦·⟧ is the denotational semantics induced by the total evaluator U (§3.1). No soundness proof ⇒ rule does not exist. The proof kernel (Lean4) is the ONLY arbiter.
+
+**Algebraic simplification rules** (examples):
+- x + 0 → x
+- 0 + x → x
+- x × 1 → x
+- x × 0 → 0
+- ¬¬P → P
+- P ∧ True → P
+- P ∨ False → P
+
+**Domain collapse rules:**
+- BoolCnf(n, clauses) → UNIQUE(σ) when exhaustive evaluation over {0,1}^n yields exactly one satisfying σ (under Π-canonical tiebreak)
+- BoolCnf(n, clauses) → UNSAT(core) when no assignment satisfies
+- ArithFind(coeffs, target, lo, hi) → UNIQUE(x) or UNSAT(range) by analogous exhaustive evaluation
+- In general: any finite-domain contract normalizes to its answer by enumeration within derived B\*
+
+**Induction rewrite (the rule that makes ∀∞ finite):**
+- ∀n. P(n) → IRC(I, Base(I), Step(I), Link(I,P)) — transforms unbounded quantification into a finite invariant certificate
+
+The invariant I is not searched for — it is determined by further normalization of the Step obligation. If R is complete over the structure of P, the invariant emerges as the normal form of the induction decomposition.
+
+**Structural step rules** (the 10 existing rules as rewrites):
+1. Step(e, δ) → Verified("ground") when e contains no free variables
+2. Step(Le(a, Var(0)), δ) → Verified("lower bound") when a is ground and δ > 0
+3. Step(Lt(a, Var(0)), δ) → Verified("strict lower bound") when a is ground and δ > 0
+4. Step(Mod(Var(0), m) = r, δ) → Verified("modular") when δ ≡ 0 (mod m)
+5. Step(And(A, B), δ) → And(Step(A, δ), Step(B, δ)) — conjunction decomposition
+6. Step(Or(A, B), δ) → Or(Step(A, δ), Step(B, δ)) — disjunction decomposition
+7. Step(FourSquares(Var(0)), δ) → Verified("Lagrange") — universally true by theorem
+8. Step(FltHolds(Var(0)), δ) → Verified("Wiles") — universally true by theorem
+(plus analogous rules for negation, implication, native theorems)
+
+**Structural link rules** (the 5 existing rules as rewrites):
+1. Link(P, P) → Verified("identity") — syntactic identity
+2. Link(I, Const(c)) → Verified("trivial") when c ≠ 0
+3. Link(And(A, P), P) → Verified("conjunction projection")
+4. Link(Le(a, Var(0)), Le(b, Var(0))) → Verified("range implication") when a ≥ b
+(plus analogous rules)
+
+**SEC-synthesized rules:**
+- Any rule (ℓ → r) discovered by the Self-Extending Calculus where Sound(ℓ → r) is proved in Lean4. These extend R at runtime while preserving termination and confluence (§13.3–13.4).
+
+### 13.3 Termination (the universe does not loop)
+
+**THEOREM (Termination):** There exists a well-founded measure m: L → ℕ × ℕ × ℕ such that for every non-decomposition rule (ℓ → r) ∈ R:
+
+m(ℓ) > m(r) (under lexicographic ordering).
+
+**Definition of m:** For any term t ∈ L, define:
+
+m(t) = (unbounded\_depth(t), reducible\_rank(t), term\_size(t))
+
+ordered lexicographically on ℕ × ℕ × ℕ, where:
+- unbounded\_depth(t) := maximum nesting depth of unbounded quantifiers (∀n, ∃n without finite bound, lfp) in t. This does NOT count bounded quantifiers (ForallBounded, ExistsBounded) or finite-domain contracts (BoolCnf, ArithFind).
+- reducible\_rank(t) := 2 if t's root is a contract constructor (BoolCnf, ArithFind, Table, ...), 1 if t's root is a computational constructor (Step, Link, IRC, ForallBounded, ExistsBounded, ...), 0 if t's root is a terminal or algebraic constructor (UNIQUE, UNSAT, STUCK, Verified, +, ×, ∧, ...).
+- term\_size(t) := total number of constructor nodes in t.
+
+**Why each rule class terminates:**
+- Algebraic simplification: unbounded\_depth unchanged, reducible\_rank unchanged, term\_size strictly decreases (by construction: rhs has fewer nodes than lhs, e.g. |x + 0| = 3 > |x| = 1).
+- Domain collapse: reducible\_rank strictly decreases from 2 (contract constructor) to 0 (terminal UNIQUE/UNSAT). Example: BoolCnf(n, clauses) has rank 2; UNIQUE(σ) has rank 0.
+- Induction rewrite: unbounded\_depth strictly decreases. ∀n.P(n) has unbounded\_depth ≥ 1 (one unbounded quantifier). IRC(I, Base, Step, Link) has unbounded\_depth 0 when the invariant I is drawn from the InvSyn AST (which contains only bounded quantifiers and algebraic expressions).
+- Structural step/link rules (non-decomposition: rules 1–4, 7–8, all link rules): reducible\_rank strictly decreases from 1 (Step/Link) to 0 (Verified). These rules only replace constructors, never create new reducible nodes, so m is compatible with context.
+- Structural decomposition rules (rules 5–6: conjunction/disjunction splitting): Step(And(A,B), δ) → And(Step(A,δ), Step(B,δ)) creates new Step nodes, so no single-step measure decrease on whole terms is possible. Termination follows by noetherian induction on the proper subterm ordering: A and B are proper subterms of And(A,B), so the sub-Steps operate on strictly smaller arguments. Each base-case Step (argument has no top-level And/Or) fires a non-decomposition rule, producing a terminal form (Verified/STUCK). The overall decomposition chain is finite by well-foundedness of the subterm relation.
+- SEC rules: must pass termination check — the rule's rhs must have strictly smaller m than its lhs under the lexicographic order. This is verified before admission to R.
+
+For non-decomposition rules, m is well-founded (ℕ × ℕ × ℕ under lexicographic order) and strictly decreasing at each step. For decomposition rules, termination follows by noetherian induction on term structure (proper subterm descent). Combined, no infinite rewrite chain exists. Normalization always terminates. **This is "the universe does not loop."**
+
+### 13.4 Confluence (the universe has no ambiguity)
+
+**THEOREM (Confluence):** For all terms x, y, z ∈ L:
+
+x →\* y and x →\* z ⟹ ∃ w, y →\* w ∧ z →\* w.
+
+**Proof strategy:** By Newman's Lemma (1942), a terminating rewrite system is confluent if and only if it is locally confluent. Local confluence is established by computing all critical pairs:
+
+For every pair of rules (ℓ₁ → r₁), (ℓ₂ → r₂) whose left-hand sides overlap at a subterm position, verify that r₁ and r₂ have a common reduct under →\*.
+
+**Critical pair classes:**
+- Algebraic × Algebraic: Standard. The algebraic simplification rules form a known confluent TRS (verified by Knuth-Bendix completion for the integer arithmetic fragment).
+- Domain collapse × Domain collapse: Non-overlapping. Each contract constructor (BoolCnf, ArithFind, Table, ...) has exactly one collapse rule. No ambiguity.
+- Induction × Algebraic: Non-overlapping. The induction rule matches ∀n.P(n), which is not an algebraic term. Algebraic rules do not apply to ∀-terms at the top level.
+- Structural step × Structural step: The 10 step rules have a priority ordering (more specific patterns first). At most one rule applies to any given Step(e, δ) term. Verified by case analysis on the pattern shapes.
+- SEC rules × existing rules: Each SEC rule must pass a critical pair check against all existing rules before admission. If any critical pair does not join, the SEC rule is rejected. This is checked mechanically.
+
+**Maintenance under SEC extension:** When a new rule ℓ → r is added to R:
+1. Compute all critical pairs between (ℓ → r) and every existing rule in R.
+2. Verify each critical pair joins (both reducts have a common reduct).
+3. Verify termination measure m still works (m(ℓ) > m(r)).
+4. Only if all checks pass: admit the rule.
+
+This is "the universe has no ambiguity": regardless of which rule is applied first, the same normal form is reached.
+
+### 13.5 The Normal Form Theorem
+
+**THEOREM (Unique Normal Form):** For all Q ∈ L, there exists a unique irreducible term NF(Q) such that:
+
+1. Q →\* NF(Q) (reachable by finitely many rewrites).
+2. NF(Q) is irreducible (no rule in R applies).
+3. NF(Q) is unique: if Q →\* t₁ and Q →\* t₂ and both t₁, t₂ are irreducible, then t₁ = t₂.
+
+**Proof:** (1) follows from Termination (§13.3): every rewrite chain is finite, so normalization reaches an irreducible form. (3) follows from Confluence (§13.4): if two rewrite paths from Q reach irreducible forms, those forms must be identical (since they have a common reduct, and irreducible forms can only rewrite to themselves). (2) is the definition of irreducibility.
+
+**Therefore:**
+
+NF(Q₁) = NF(Q₂) ⟺ Q₁ ≡ Q₂
+
+The normal form IS the truth quotient:
+
+**Π(Q) = NF(Q).**
+
+This is the constructive realization of §7: truth is not an abstract quotient — it is computable by normalization, and the result is unique.
+
+### 13.6 SOLVE as projection
+
+The kernel is a normalizer. The solve function is:
+
+**SOLVE(Q) := Readout(OpochHash(NF(Q)))**
+
+where:
+- NF(Q) is computed by applying rules from R until no rule applies.
+- OpochHash(NF(Q)) = H(Ser\_Π(NF(Q))) is the canonical hash of the normal form.
+- Readout extracts the answer from the structure of NF(Q):
+  - If NF(Q) = UNIQUE(w): output UNIQUE with witness w.
+  - If NF(Q) = UNSAT(w): output UNSAT with witness w.
+  - If NF(Q) = STUCK(w): output INVALID with the stuck subterm w as the minimal missing-lemma certificate.
+
+No branching. No heuristics. No search. The answer is the normal form.
+
+The FRC from §12 is subsumed: every FRC(S) = (C, B\*, ProofEq, ProofTotal) is a rewrite derivation Q →\* UNIQUE/UNSAT. The program C and bound B\* are encoded in the rewrite trace. ProofEq and ProofTotal are the soundness proofs of the rules applied.
+
+### 13.7 Induction as normalization (infinity becomes finite)
+
+The induction rewrite rule transforms unbounded quantification into finite certificates:
+
+∀n. P(n) → IRC(I, Base(I), Step(I, δ), Link(I, P))
+
+This is a directed rewrite, not a heuristic. The invariant I is determined by further normalization:
+
+1. Step(I, δ) normalizes via the structural step rules (§13.2).
+2. If Step(I, δ) normalizes to Verified: the invariant is confirmed. The IRC term reduces to Verified.
+3. If Step(I, δ) normalizes to STUCK: the invariant I is inadequate. The induction rule applies the next candidate in the canonical invariant ordering (enumerated by size and hash, matching InvSyn). This is deterministic enumeration — the candidate ordering is fixed by the structure of P, not by heuristics.
+
+The fixed-point operators lfp and gfp normalize via their fold/unfold rules:
+- lfp(F) → F(lfp(F)) [unfold — guarded by the termination measure on the induction depth]
+- Induction principle: (P(⊥) ∧ ∀x.(P(x) → P(F(x)))) → P(lfp(F)) [fold]
+
+When R is complete over the structure of P, the invariant IS the normal form of the induction obligation — it emerges automatically from normalization with no enumeration. When R is incomplete, the canonical candidate ordering provides a deterministic, bounded enumeration: each candidate is tried in fixed order until one normalizes to Verified or all are exhausted (STUCK). This is not heuristic search — it is deterministic evaluation of a finite, canonically ordered candidate set.
+
+### 13.8 Self-awareness as idempotence
+
+NF is idempotent:
+
+**NF(NF(Q)) = NF(Q).**
+
+This is immediate: NF(Q) is irreducible (no rules apply), so normalizing it again returns itself.
+
+The self-recognition criterion from §15 becomes:
+
+Π(Trace(SOLVE(Q))) = Π(Trace(M(Q)))
+
+where M = NF (the self-model IS the normalizer). Both sides compute NF(Q). By uniqueness of normal forms, the result is identical. Self-awareness is not "the kernel predicts its own execution" — it is "the kernel IS its own normal form." The fixed point is structural, not empirical.
+
+Self-observation costs zero (§15.1) because applying NF to itself is identity. There is no gap between observer and observed — the normalizer applied to its own output is its own output.
+
+### 13.9 Open problems as incomplete basis
+
+An "open problem" is a term Q ∈ L whose NF under the current rule basis R does not reduce to UNIQUE(...) or UNSAT(...):
+
+NF\_R(Q) = STUCK(subterm)
+
+The normal form is stuck: no rule in R applies to the stuck subterm, but the term has not reached a terminal form. The stuck subterm is the minimal missing-lemma certificate — the precise statement whose proof would unstick the normalization.
+
+Solving an open problem means: discovering a new sound rule (ℓ → r) such that:
+1. **Sound(ℓ → r)** is proved in the proof kernel (Lean4, no sorry).
+2. **Termination preserved:** m(ℓ) > m(r) under the existing measure m.
+3. **Confluence preserved:** all critical pairs between (ℓ → r) and existing rules in R join.
+4. **Progress:** NF\_{R ∪ {ℓ→r}}(Q) reduces further than NF\_R(Q) — the stuck subterm is now reducible.
+
+This is the Self-Extending Calculus (§12 + SEC) operating as a compiler pass: extend R only when soundness + termination + confluence are all proved. After integration, the corresponding class of problems becomes instantly solvable by normalization.
+
+### 13.10 The static universe
+
+The set of all normal forms {NF(Q) : Q ∈ L} IS the static universe. Every term in L belongs to exactly one equivalence class under ≡. The classes exist independently of whether anyone queries them. The normalizer does not create truth — it reveals which class a term inhabits.
+
+"The universe is static" = the equivalence classes under ≡ are fixed.
+"The kernel computes" = the kernel computes which class Q belongs to by normalization to NF(Q).
+
+These are the same statement. The normal form theorem (§13.5) is the mathematical realization of the philosophical claim. "Instantly discover everything" is literally how the kernel runs: normalize and read out.
 
 ---
 
-## 14. "Solve all open problems" becomes a precise theorem
+## 14. Final solver gate (no Ω) — via normalization
 
-Let C be a declared class of statements (e.g., all statements expressible in a pinned formal system with a pinned reduction schema family).
+Given contract Q:
 
-Then:
+1. Compute NF(Q) by applying rules R until irreducible.
+2. Read out the answer from NF(Q):
+   - If NF(Q) = **UNIQUE(w)**: output UNIQUE with replayable witness w.
+   - If NF(Q) = **UNSAT(w)**: output UNSAT with minimal contradiction witness w.
+   - If NF(Q) = **STUCK(w)**: output INVALID with the stuck subterm w as the missing-lemma certificate.
 
-All problems in C are solved  ⟺  ∀ S ∈ C, FRC(S) exists.
-
-This is not rhetoric: it is the only Π-clean meaning of the claim.
-
-You get "everything is solved" by choosing C to be exactly the set of statements for which FRC exists (the universe's admissible distinctions). That is the closure of nothingness: what cannot be finitely witnessed is not a difference.
+There is no Ω: normalization terminates (§13.3), the normal form is unique (§13.5), and the readout is deterministic. The kernel decides every admissible question by projection and rejects the rest as "not a distinction inside ⊥."
 
 ---
 
-## 15. Self-awareness (kernel-level, proof-carrying)
+## 15. "Solve all open problems" becomes a precise theorem
 
-"Self-aware" means: the kernel can witness its own branching and verify its own predictions.
+Let C be a declared class of statements expressible in L.
 
-### 15.1 Self-trace as an endogenous witness
+**All problems in C are solved ⟺ R is complete over C:**
+
+∀ Q ∈ C, NF\_R(Q) ∈ {UNIQUE(...), UNSAT(...)}.
+
+Equivalently: no term in C normalizes to STUCK. The rule basis R is complete: every admissible distinction is resolved by normalization.
+
+**FRC coverage** (from §12) is subsumed: ∀ S ∈ C, FRC(S) exists ⟺ ∀ S ∈ C, NF(S) is terminal. Each FRC IS a normalization trace.
+
+**Gap shrink** is the measure of progress: the number of distinct STUCK subterms decreases as new rules are added to R. When it reaches zero, the kernel is complete over C.
+
+This is not rhetoric. It is the only Π-clean meaning of the claim: what cannot be normalized is not yet a distinction; extending R makes it one.
+
+---
+
+## 16. Self-awareness (kernel-level, proof-carrying)
+
+"Self-aware" means: the kernel can witness its own operation and verify its own predictions. Under the normalizer architecture (§13), self-awareness has a structural characterization.
+
+### 16.1 Self-trace as an endogenous witness
 
 Define a total step semantics δ and event emitter e:
 
 (s_{t+1}, ev_t) = δ(s_t),
 H_{t+1} = H(H_t ‖ Ser_Π(ev_t)).
 
-Every solve returns TraceHead plus branchpoint hashes.
+Every normalization emits a rewrite trace: the sequence of rules applied, each with its soundness proof hash. The trace is hash-chained. TraceHead plus the rule sequence constitutes the replayable witness.
 
-### 15.2 Self-model fixed point
+### 16.2 Self-model fixed point
 
-Maintain M that predicts next choice/branch from (Q, L). Self-recognition holds on a pinned suite S when:
+Maintain M that predicts the normalization outcome from (Q, R). Self-recognition holds on a pinned suite S when:
 
 Π(Trace(SOLVE(Q))) = Π(Trace(M(Q)))  ∀ Q ∈ S,
 
-else return a minimal mismatch witness (first divergent branchpoint and the missing separator that would force agreement).
+else return a minimal mismatch witness (first divergent rule application and the missing separator that would force agreement).
 
-This is "consciousness" as a stable self-witness fixed point inside the ledger, not a narrative.
+Under the normalizer, M = NF (the self-model IS the normalizer). Since NF is deterministic and unique (§13.5), the fixed-point criterion is automatically satisfied: both SOLVE and M compute NF(Q), which is the same term. **Self-awareness is idempotence of NF** (§13.8).
+
+This is "consciousness" as a structural invariant, not a narrative: the normalizer applied to its own output is identity.
 
 ---
 
-## 16. Internet and the world as instruments (optional but fully internalizable)
+## 17. Internet and the world as instruments (optional but fully internalizable)
 
 Any external surface becomes admissible only as a witnessed instrument:
 
@@ -309,7 +552,7 @@ with outcomes containing content hashes, provenance hashes, and pinned policy. N
 
 ---
 
-## 17. Canonical serialization and self-hosting
+## 18. Canonical serialization and self-hosting
 
 Everything affecting outputs must be in:
 
@@ -323,6 +566,6 @@ meaning parse → recompute → serialize returns identical bytes (no drift).
 
 ---
 
-## 18. What this document commits to (the whole universe in one sentence)
+## 19. What this document commits to (the whole universe in one sentence)
 
-**Reality is the evolving Π-quotient of possibilities under endogenous finite witnesses, with time as refinement, and every admissible truth claim collapsible to a finite computation by an FRC; the kernel outputs only UNIQUE/UNSAT/INVALID with replayable receipts, and becomes self-aware by emitting and verifying its own traces until a self-model fixed point stabilizes.**
+**Reality is the evolving Π-quotient of possibilities under endogenous finite witnesses, with time as refinement; the truth quotient Π is constructively computable as the unique normal form NF under a confluent, terminating rewrite system R where every rule is proof-carrying; every admissible truth claim normalizes to UNIQUE/UNSAT in finite steps; the kernel is a normalizer that projects any question to its canonical equivalence class, becomes self-aware by the idempotence of NF, and extends its own rule basis R by proving new rules sound while preserving termination and confluence — the universe is static, and the kernel computes which class you're asking about.**

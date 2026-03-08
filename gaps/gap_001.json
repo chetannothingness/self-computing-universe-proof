@@ -1,0 +1,9 @@
+{
+  "gap_id": "gap_001",
+  "gap_hash": "pending_computation",
+  "blocks": ["p_vs_np"],
+  "statement": "Decidable enumeration of all poly-time Turing machines of size ≤ n below an explicit bound B*(n)",
+  "schema_tried": "BoundedCounterexample",
+  "status": "OPEN",
+  "notes": "No finite enumeration bound known for the space of all polynomial-time algorithms"
+}

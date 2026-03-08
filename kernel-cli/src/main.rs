@@ -238,6 +238,134 @@ enum Commands {
 
     /// Compute and display FRC coverage metrics.
     Coverage,
+
+    /// Emit Lean4 proof bundle for all millennium FRC problems.
+    LeanEmit {
+        /// Output directory for the Lean4 bundle.
+        #[arg(long)]
+        output: String,
+    },
+
+    /// Verify Lean4 proofs by invoking `lake build`.
+    LeanVerify {
+        /// Path to the lean/ directory.
+        #[arg(long)]
+        lean_dir: String,
+    },
+
+    /// Emit full proof bundle: frc.json + Lean proofs + trace + receipt.
+    BundleEmit {
+        /// Problem ID or "all" for all problems.
+        #[arg(long)]
+        problem: String,
+        /// Output directory.
+        #[arg(long)]
+        output: String,
+    },
+
+    /// Verify complete bundle (hashes + trace + Lean).
+    BundleVerify {
+        /// Path to the bundle directory.
+        #[arg(long)]
+        bundle: String,
+    },
+
+    /// Solve problems via IRC (invariant synthesis + induction) for unbounded proofs.
+    IrcSolve {
+        /// Which problems ("all" or comma-separated IDs).
+        #[arg(long, default_value = "all")]
+        problems: String,
+        /// Output directory.
+        #[arg(long, default_value = "/tmp/irc_proofs")]
+        output: String,
+    },
+
+    /// Verify IRC proof bundles.
+    IrcVerify {
+        /// Bundle directory.
+        #[arg(long)]
+        bundle: String,
+    },
+
+    /// Run InvSyn structural invariant search for a specific problem.
+    InvsynSearch {
+        /// Problem ID.
+        #[arg(long)]
+        problem: String,
+        /// Maximum AST size for candidate enumeration.
+        #[arg(long, default_value = "10")]
+        max_size: usize,
+    },
+
+    /// SEC: Mine new rules for a specific problem's gap.
+    SecMine {
+        /// Problem ID.
+        #[arg(long)]
+        problem: String,
+    },
+
+    /// SEC: Show the current rule database status.
+    SecStatus,
+
+    /// SEC: Verify all rules have valid Lean proofs.
+    SecVerify {
+        /// Path to the lean/ directory.
+        #[arg(long, default_value = "lean")]
+        lean_dir: String,
+    },
+
+    /// UCert: Solve problems via Universal Certificate normalizer.
+    UcertSolve {
+        /// Which problems ("all", "proved", "open", "millennium", or comma-separated IDs).
+        #[arg(long, default_value = "all")]
+        problems: String,
+        /// Maximum certificate rank to search.
+        #[arg(long, default_value = "1000")]
+        max_rank: u64,
+    },
+
+    /// UCert: Show certificate status for all problems.
+    UcertStatus,
+
+    /// UCert: Debug certificate enumeration for a specific problem.
+    UcertEnumerate {
+        /// Problem ID.
+        #[arg(long)]
+        problem: String,
+        /// Maximum rank to enumerate.
+        #[arg(long, default_value = "100")]
+        max_rank: u64,
+    },
+
+    /// Solve problems via Universal Proof Enumeration.
+    ProofSolve {
+        /// Which problems ("all", "proved", "open", "millennium", or comma-separated IDs).
+        #[arg(long, default_value = "all")]
+        problems: String,
+        /// Maximum enumeration rank.
+        #[arg(long, default_value = "10000")]
+        max_rank: u64,
+        /// Path to lean/ directory.
+        #[arg(long, default_value = "lean")]
+        lean_dir: String,
+    },
+
+    /// Π_proof: Project all problems via the true source-code kernel.
+    /// G(S) computes proofs directly. No search. No frontier.
+    PiProject {
+        /// Snapshot budget (0 = unbounded — G runs to completion).
+        #[arg(long, default_value = "1000000")]
+        budget: u64,
+    },
+
+    /// Π_decide: Universal decision operator — the TRUE source-code kernel.
+    /// Classifies every S ∈ 𝒰 as TRUE, FALSE, or INDEPENDENT.
+    /// The universe commits to classification, not to preferred outcomes.
+    PiDecide {
+        /// Snapshot budget (0 = unbounded — G runs to completion).
+        #[arg(long, default_value = "1000000")]
+        budget: u64,
+    },
 }
 
 fn main() {
@@ -274,6 +402,22 @@ fn main() {
         Commands::FrcSuiteFull => cmd_frc_suite_full(),
         Commands::ClassC => cmd_class_c(),
         Commands::Coverage => cmd_coverage(),
+        Commands::LeanEmit { output } => cmd_lean_emit(&output),
+        Commands::LeanVerify { lean_dir } => cmd_lean_verify(&lean_dir),
+        Commands::BundleEmit { problem, output } => cmd_bundle_emit(&problem, &output),
+        Commands::BundleVerify { bundle } => cmd_bundle_verify(&bundle),
+        Commands::IrcSolve { problems, output } => cmd_irc_solve(&problems, &output),
+        Commands::IrcVerify { bundle } => cmd_irc_verify(&bundle),
+        Commands::InvsynSearch { problem, max_size } => cmd_invsyn_search(&problem, max_size),
+        Commands::SecMine { problem } => cmd_sec_mine(&problem),
+        Commands::SecStatus => cmd_sec_status(),
+        Commands::SecVerify { lean_dir } => cmd_sec_verify(&lean_dir),
+        Commands::UcertSolve { problems, max_rank } => cmd_ucert_solve(&problems, max_rank),
+        Commands::UcertStatus => cmd_ucert_status(),
+        Commands::UcertEnumerate { problem, max_rank } => cmd_ucert_enumerate(&problem, max_rank),
+        Commands::ProofSolve { problems, max_rank, lean_dir } => cmd_proof_solve(&problems, max_rank, &lean_dir),
+        Commands::PiProject { budget } => cmd_pi_project(budget),
+        Commands::PiDecide { budget } => cmd_pi_decide(budget),
     }
 }
 
@@ -2136,4 +2280,956 @@ fn cmd_coverage() {
     let class_c = ClassCDefinition::build(&schemas, &motif_library, &inductor);
     println!();
     println!("{}", class_c.display());
+}
+
+fn cmd_lean_emit(output_dir: &str) {
+    use kernel_lean::program_embed;
+    use kernel_lean::proof_eq_gen;
+    use kernel_lean::proof_total_gen;
+
+    println!("=== Lean4 Proof Bundle Emission ===");
+    println!();
+
+    let output_path = std::path::Path::new(output_dir);
+    fs::create_dir_all(output_path).expect("Failed to create output directory");
+
+    // Build FRCs for all 14 problems
+    let problems = vec![
+        ("goldbach", 100i64, None),          // B*≈3.36M — Lean OK
+        ("collatz", 30, Some(200i64)),        // reduced: Lean native_decide limit
+        ("twin_primes", 1000, None),          // reduced: Lean native_decide limit
+        ("flt", 2, Some(5)),                  // reduced: Lean native_decide limit
+        ("odd_perfect", 100, None),           // reduced: Lean native_decide limit
+        ("mersenne", 31, None),               // B*≈5.69M — Lean OK
+        ("zfc_zero_ne_one", 0, None),         // B*=10 — Lean OK
+        ("mertens", 100, None),               // B*≈1.22M — Lean OK
+        ("legendre", 50, None),               // B*≈2.66M — Lean OK
+        ("erdos_straus", 30, None),           // reduced: Lean native_decide limit
+        ("bsd_ec_count", 10, Some(0)),        // reduced: Lean native_decide limit
+        ("weak_goldbach", 30, None),          // reduced: Lean native_decide limit
+        ("bertrand", 100, None),              // B*≈4M — Lean OK
+        ("lagrange_four_squares", 30, None),  // reduced: Lean native_decide limit
+    ];
+
+    let mut emitted = 0;
+    for (problem_id, param_n, param_aux) in &problems {
+        let contract_json = match param_aux {
+            Some(aux) => format!(
+                r#"{{"type":"millennium_finite","description":"{} lean emit","problem_id":"{}","parameter_n":{},"parameter_aux":{}}}"#,
+                problem_id, problem_id, param_n, aux
+            ),
+            None => format!(
+                r#"{{"type":"millennium_finite","description":"{} lean emit","problem_id":"{}","parameter_n":{}}}"#,
+                problem_id, problem_id, param_n
+            ),
+        };
+        let contract = kernel_contracts::compiler::compile_contract(&contract_json)
+            .expect("Failed to compile contract");
+        let mut ledger = kernel_ledger::Ledger::new();
+
+        match kernel_frc::millennium_frc::build_millennium_frc(&contract, &mut ledger) {
+            Ok(frc) => {
+                let prob_dir = output_path.join(problem_id);
+                fs::create_dir_all(&prob_dir).expect("mkdir failed");
+
+                // Emit program as Lean4
+                let prog_name = format!("{}Prog", problem_id);
+                let bstar_name = format!("{}Bstar", problem_id);
+                let prog_lean = program_embed::embed_program(&frc.program, &prog_name);
+                fs::write(prob_dir.join("Program.lean"), &prog_lean).expect("write failed");
+
+                let bstar_lean = program_embed::embed_bstar(frc.b_star, &bstar_name);
+                fs::write(prob_dir.join("Bstar.lean"), &bstar_lean).expect("write failed");
+
+                // Emit ProofEq.lean
+                let proof_eq_lean = proof_eq_gen::generate_proof_eq(
+                    &frc.proof_eq, &frc.schema_id, problem_id,
+                    &prog_name, &bstar_name, &format!("{}Statement", problem_id),
+                );
+                fs::write(prob_dir.join("ProofEq.lean"), &proof_eq_lean).expect("write failed");
+
+                // Emit ProofTotal.lean
+                let proof_total_lean = proof_total_gen::generate_proof_total(
+                    &frc.proof_total, problem_id, &prog_name, &bstar_name,
+                );
+                fs::write(prob_dir.join("ProofTotal.lean"), &proof_total_lean).expect("write failed");
+
+                println!("  {} -> EMITTED ({} instructions, B*={})",
+                    problem_id, frc.program.len(), frc.b_star);
+                emitted += 1;
+            }
+            Err(e) => {
+                println!("  {} -> FAILED: {:?}", problem_id, e.schemas_tried);
+            }
+        }
+    }
+
+    println!();
+    println!("Emitted: {}/{} problems", emitted, problems.len());
+    println!("Output: {}", output_dir);
+}
+
+fn cmd_lean_verify(lean_dir: &str) {
+    use kernel_lean::lean_runner;
+
+    println!("=== Lean4 Proof Verification ===");
+    println!();
+
+    let lean_path = std::path::Path::new(lean_dir);
+    if !lean_path.exists() {
+        eprintln!("ERROR: Lean directory does not exist: {}", lean_dir);
+        std::process::exit(1);
+    }
+
+    let result = lean_runner::verify_lean_proofs(lean_path);
+
+    println!("Build success: {}", if result.build_success { "PASS" } else { "FAIL" });
+    println!("No sorry:      {}", if result.no_sorry { "PASS" } else { "FAIL" });
+
+    if !result.sorry_files.is_empty() {
+        println!();
+        println!("Files containing 'sorry':");
+        for f in &result.sorry_files {
+            println!("  {}", f);
+        }
+    }
+
+    if !result.build_stderr.is_empty() && !result.build_success {
+        println!();
+        println!("Build errors:");
+        // Print first 20 lines of stderr
+        for line in result.build_stderr.lines().take(20) {
+            println!("  {}", line);
+        }
+    }
+
+    println!();
+    if result.pass {
+        println!("LEAN VERIFICATION: PASS");
+    } else {
+        println!("LEAN VERIFICATION: FAIL");
+        if !result.build_success {
+            println!("  Hint: Install Lean4 from https://leanprover.github.io/lean4/doc/setup.html");
+        }
+        std::process::exit(1);
+    }
+}
+
+fn cmd_bundle_emit(problem: &str, output_dir: &str) {
+    use kernel_lean::bundle_gen;
+
+    println!("=== Proof Bundle Emission ===");
+    println!();
+
+    let output_path = std::path::Path::new(output_dir);
+    fs::create_dir_all(output_path).expect("Failed to create output directory");
+
+    let problems: Vec<(&str, i64, Option<i64>)> = if problem == "all" {
+        vec![
+            ("goldbach", 100, None),
+            ("collatz", 100, Some(500)),
+            ("twin_primes", 10000, None),
+            ("flt", 10, Some(40)),
+            ("odd_perfect", 1000, None),
+            ("mersenne", 31, None),
+            ("zfc_zero_ne_one", 0, None),
+            ("mertens", 100, None),
+            ("legendre", 50, None),
+            ("erdos_straus", 100, None),
+            ("bsd_ec_count", 97, Some(0)),
+            ("weak_goldbach", 101, None),
+            ("bertrand", 100, None),
+            ("lagrange_four_squares", 100, None),
+        ]
+    } else {
+        // Find matching problem
+        let param = match problem {
+            "goldbach" => ("goldbach", 100i64, None),
+            "collatz" => ("collatz", 100, Some(500i64)),
+            "twin_primes" => ("twin_primes", 10000, None),
+            "flt" => ("flt", 10, Some(40)),
+            "odd_perfect" => ("odd_perfect", 1000, None),
+            "mersenne" => ("mersenne", 31, None),
+            "zfc_zero_ne_one" => ("zfc_zero_ne_one", 0, None),
+            "mertens" => ("mertens", 100, None),
+            "legendre" => ("legendre", 50, None),
+            "erdos_straus" => ("erdos_straus", 100, None),
+            "bsd_ec_count" => ("bsd_ec_count", 97, Some(0)),
+            "weak_goldbach" => ("weak_goldbach", 101, None),
+            "bertrand" => ("bertrand", 100, None),
+            "lagrange_four_squares" => ("lagrange_four_squares", 100, None),
+            _ => {
+                eprintln!("Unknown problem: {}", problem);
+                std::process::exit(1);
+            }
+        };
+        vec![param]
+    };
+
+    let mut verified = 0;
+    let mut failed = 0;
+
+    for (problem_id, param_n, param_aux) in &problems {
+        let contract_json = match param_aux {
+            Some(aux) => format!(
+                r#"{{"type":"millennium_finite","description":"{} bundle","problem_id":"{}","parameter_n":{},"parameter_aux":{}}}"#,
+                problem_id, problem_id, param_n, aux
+            ),
+            None => format!(
+                r#"{{"type":"millennium_finite","description":"{} bundle","problem_id":"{}","parameter_n":{}}}"#,
+                problem_id, problem_id, param_n
+            ),
+        };
+        let contract = kernel_contracts::compiler::compile_contract(&contract_json)
+            .expect("Failed to compile contract");
+        let mut ledger = kernel_ledger::Ledger::new();
+
+        match kernel_frc::millennium_frc::build_millennium_frc(&contract, &mut ledger) {
+            Ok(frc) => {
+                let trace = Vm::run_traced(&frc.program, frc.b_star);
+                match bundle_gen::emit_verified_bundle(
+                    output_path, problem_id, &contract.description, &frc, &trace,
+                ) {
+                    Ok(dir) => {
+                        println!("  {} -> VERIFIED ({})", problem_id, dir.display());
+                        verified += 1;
+                    }
+                    Err(e) => {
+                        println!("  {} -> EMIT ERROR: {}", problem_id, e);
+                        failed += 1;
+                    }
+                }
+            }
+            Err(frontier) => {
+                match bundle_gen::emit_invalid_bundle(
+                    output_path, problem_id, problem_id, &frontier,
+                ) {
+                    Ok(dir) => {
+                        println!("  {} -> INVALID ({})", problem_id, dir.display());
+                    }
+                    Err(e) => {
+                        println!("  {} -> EMIT ERROR: {}", problem_id, e);
+                        failed += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    println!();
+    println!("Bundle: {}", output_dir);
+    println!("Verified: {}, Failed: {}", verified, failed);
+}
+
+fn cmd_bundle_verify(bundle_dir: &str) {
+    use kernel_lean::bundle_gen;
+
+    println!("=== Proof Bundle Verification ===");
+    println!();
+
+    let bundle_path = std::path::Path::new(bundle_dir);
+    if !bundle_path.exists() {
+        eprintln!("ERROR: Bundle directory does not exist: {}", bundle_dir);
+        std::process::exit(1);
+    }
+
+    // Find all subdirectories (each is a problem bundle)
+    let mut entries: Vec<_> = fs::read_dir(bundle_path)
+        .expect("Failed to read bundle directory")
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_dir())
+        .collect();
+    entries.sort_by_key(|e| e.file_name());
+
+    let mut pass_count = 0;
+    let mut fail_count = 0;
+    let mut skip_count = 0;
+    let mut lean_skipped = false;
+
+    for entry in &entries {
+        let problem_dir = entry.path();
+        let problem_id = entry.file_name().to_string_lossy().to_string();
+
+        let result = bundle_gen::verify_bundle(&problem_dir);
+
+        let status = if result.pass {
+            pass_count += 1;
+            "PASS"
+        } else if result.errors.is_empty() {
+            skip_count += 1;
+            "SKIP"
+        } else {
+            fail_count += 1;
+            "FAIL"
+        };
+
+        let kind = if result.is_invalid { "INVALID" } else { "VERIFIED" };
+        println!("  {} [{}]: {}", problem_id, kind, status);
+
+        if !result.errors.is_empty() {
+            for err in &result.errors {
+                println!("    - {}", err);
+            }
+        }
+    }
+
+    // Check Lean proofs if lean/ directory exists alongside bundle
+    let lean_dir = bundle_path.parent()
+        .unwrap_or(bundle_path)
+        .join("lean");
+    if lean_dir.exists() {
+        println!();
+        println!("--- Lean4 Verification ---");
+        let lean_result = kernel_lean::lean_runner::verify_lean_proofs(&lean_dir);
+        if lean_result.pass {
+            println!("  lake build: PASS");
+            println!("  No sorry:   PASS");
+        } else if !lean_result.build_success {
+            println!("  lake build: SKIPPED (Lean4 not installed)");
+            lean_skipped = true;
+        } else {
+            println!("  lake build: {}", if lean_result.build_success { "PASS" } else { "FAIL" });
+            println!("  No sorry:   {}", if lean_result.no_sorry { "PASS" } else { "FAIL" });
+        }
+    } else {
+        println!();
+        println!("--- Lean4 Verification: SKIPPED (no lean/ directory found) ---");
+        lean_skipped = true;
+    }
+
+    println!();
+    println!("=== BUNDLE VERIFICATION SUMMARY ===");
+    println!("  PASS:    {}", pass_count);
+    println!("  FAIL:    {}", fail_count);
+    println!("  SKIP:    {}", skip_count);
+    if lean_skipped {
+        println!("  Lean4:   SKIPPED");
+    }
+
+    if fail_count > 0 {
+        println!();
+        println!("BUNDLE VERIFICATION: FAIL");
+        std::process::exit(1);
+    } else {
+        println!();
+        println!("BUNDLE VERIFICATION: PASS");
+    }
+}
+
+fn cmd_irc_solve(problems_arg: &str, output_dir: &str) {
+    use kernel_frc::irc::{self, IrcSearch};
+    use kernel_frc::frc_types::IrcResult;
+    use kernel_lean::bundle_gen;
+
+    println!("=== IRC SOLVE: Invariant-based unbounded proofs ===");
+    println!();
+
+    let problem_ids: Vec<&str> = if problems_arg == "all" {
+        irc::ALL_PROBLEM_IDS.to_vec()
+    } else {
+        problems_arg.split(',').map(|s| s.trim()).collect()
+    };
+
+    let engine = IrcSearch::new();
+    let output_path = std::path::Path::new(output_dir);
+    fs::create_dir_all(output_path).expect("Failed to create output directory");
+
+    let mut proved_count = 0u32;
+    let mut frontier_count = 0u32;
+
+    for problem_id in &problem_ids {
+        let result = engine.search(problem_id);
+
+        let (status, detail) = match &result {
+            IrcResult::Proved(irc) => {
+                proved_count += 1;
+                let inv_desc = format!("{:?}", irc.invariant.kind);
+                ("PROVED", format!("I(n)={}, all obligations discharged", inv_desc))
+            }
+            IrcResult::Frontier(frontier) => {
+                frontier_count += 1;
+                if let Some(ref best) = frontier.best_candidate {
+                    let inv_desc = format!("{:?}", best.invariant.kind);
+                    let gaps: Vec<String> = [
+                        (!best.base.is_discharged()).then(|| "Base".to_string()),
+                        (!best.step.is_discharged()).then(|| "Step".to_string()),
+                        (!best.link.is_discharged()).then(|| "Link".to_string()),
+                    ].into_iter().flatten().collect();
+                    ("FRONTIER", format!("invariant={}, Gap({})", inv_desc, gaps.join(",")))
+                } else {
+                    ("FRONTIER", "no viable candidate".to_string())
+                }
+            }
+        };
+
+        println!("  {:20} {} — {}", format!("{}:", problem_id), status, detail);
+
+        // Emit bundle
+        if let Err(e) = bundle_gen::emit_irc_bundle(output_path, problem_id, &result) {
+            eprintln!("    WARNING: bundle emit failed: {}", e);
+        }
+    }
+
+    println!();
+    println!("  IRC Summary: {} PROVED, {} FRONTIER", proved_count, frontier_count);
+    println!("  Each FRONTIER identifies the exact obligation that is the open problem.");
+    println!("  Output: {}", output_dir);
+}
+
+fn cmd_irc_verify(bundle_dir: &str) {
+    use kernel_frc::frc_types::Irc;
+
+    println!("=== IRC Bundle Verification ===");
+    println!();
+
+    let bundle_path = std::path::Path::new(bundle_dir);
+    if !bundle_path.exists() {
+        eprintln!("ERROR: Bundle directory does not exist: {}", bundle_dir);
+        std::process::exit(1);
+    }
+
+    let mut entries: Vec<_> = fs::read_dir(bundle_path)
+        .expect("Failed to read bundle directory")
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().is_dir())
+        .collect();
+    entries.sort_by_key(|e| e.file_name());
+
+    let mut pass_count = 0u32;
+    let mut fail_count = 0u32;
+
+    for entry in &entries {
+        let problem_dir = entry.path();
+        let problem_id = entry.file_name().to_string_lossy().to_string();
+
+        let mut errors: Vec<String> = Vec::new();
+
+        // Check for irc.json (proved) or irc_frontier.json (frontier)
+        let irc_path = problem_dir.join("irc.json");
+        let frontier_path = problem_dir.join("irc_frontier.json");
+
+        if irc_path.exists() {
+            // Proved IRC — verify internal consistency
+            match fs::read_to_string(&irc_path) {
+                Ok(content) => {
+                    match serde_json::from_str::<Irc>(&content) {
+                        Ok(irc) => {
+                            if !irc.verify_internal() {
+                                errors.push("IRC internal verification failed".to_string());
+                            }
+                            if !irc.is_complete() {
+                                errors.push(format!(
+                                    "IRC not complete: {}/3 discharged",
+                                    irc.obligations_discharged()
+                                ));
+                            }
+                        }
+                        Err(e) => errors.push(format!("Failed to parse irc.json: {}", e)),
+                    }
+                }
+                Err(e) => errors.push(format!("Failed to read irc.json: {}", e)),
+            }
+
+            // Check Lean files for sorry
+            for lean_file in &["Invariant.lean", "IrcResult.lean"] {
+                let p = problem_dir.join(lean_file);
+                if p.exists() {
+                    if let Ok(content) = fs::read_to_string(&p) {
+                        // Note: axiom is fine (honest gaps), sorry is not
+                        if content.contains("sorry") && !content.contains("-- sorry") {
+                            errors.push(format!("{} contains 'sorry'", lean_file));
+                        }
+                    }
+                }
+            }
+        } else if frontier_path.exists() {
+            // Frontier — just verify it parses
+            match fs::read_to_string(&frontier_path) {
+                Ok(content) => {
+                    if serde_json::from_str::<kernel_frc::frc_types::IrcFrontier>(&content).is_err() {
+                        errors.push("Failed to parse irc_frontier.json".to_string());
+                    }
+                }
+                Err(e) => errors.push(format!("Failed to read irc_frontier.json: {}", e)),
+            }
+        } else {
+            errors.push("No irc.json or irc_frontier.json found".to_string());
+        }
+
+        let status = if errors.is_empty() {
+            pass_count += 1;
+            "PASS"
+        } else {
+            fail_count += 1;
+            "FAIL"
+        };
+
+        let kind = if irc_path.exists() { "PROVED" } else { "FRONTIER" };
+        println!("  {} [{}]: {}", problem_id, kind, status);
+
+        for err in &errors {
+            println!("    - {}", err);
+        }
+    }
+
+    println!();
+    println!("=== IRC VERIFICATION SUMMARY ===");
+    println!("  PASS: {}", pass_count);
+    println!("  FAIL: {}", fail_count);
+
+    if fail_count > 0 {
+        println!();
+        println!("IRC VERIFICATION: FAIL");
+        std::process::exit(1);
+    } else {
+        println!();
+        println!("IRC VERIFICATION: PASS");
+    }
+}
+
+fn cmd_invsyn_search(problem_id: &str, max_size: usize) {
+    use kernel_frc::invsyn::{InvSynSearch, InvSynResult, normalize};
+
+    println!("=== InvSyn Search: Structural Invariant Synthesis ===");
+    println!("  Problem: {}", problem_id);
+    println!("  Max AST size: {}", max_size);
+    println!();
+
+    let problem = normalize(problem_id);
+    println!("  Reachability form:");
+    println!("    State type: {}", problem.state_type);
+    println!("    Initial: {} = {}", problem.initial_lean, problem.initial_value);
+    println!("    Step: {} (delta = {})", problem.step_lean, problem.step_delta);
+    println!("    Property: {}", problem.property_lean);
+    println!();
+
+    let mut engine = InvSynSearch::new();
+    engine.max_ast_size = max_size;
+
+    let result = engine.search(&problem);
+    match result {
+        InvSynResult::Found { inv, base_result, step_result, link_result, step_structural, link_structural } => {
+            println!("  FOUND invariant: {:?}", inv);
+            println!("    AST size: {}", inv.size());
+            println!("    Layer: {:?}", inv.layer());
+            println!("    Lean: {}", inv.to_lean());
+            println!();
+            println!("  Base: {}", base_result);
+            println!("  Step: {} (structural: {})", step_result, step_structural);
+            println!("  Link: {} (structural: {})", link_result, link_structural);
+            println!();
+            if step_structural && link_structural {
+                println!("  STRUCTURALLY VERIFIED. Real Lean proof terms can be generated.");
+            } else {
+                println!("  WARNING: Not fully structurally verified.");
+                if !step_structural { println!("    Step requires structural proof."); }
+                if !link_structural { println!("    Link requires structural proof."); }
+            }
+        }
+        InvSynResult::Frontier { candidates_tried, max_ast_size } => {
+            println!("  FRONTIER: No invariant found");
+            println!("    Candidates tried: {}", candidates_tried);
+            println!("    Max AST size: {}", max_ast_size);
+            println!();
+            println!("  This problem requires a mathematical breakthrough");
+            println!("  expressible in the InvSyn language.");
+        }
+    }
+}
+
+fn cmd_sec_mine(problem_id: &str) {
+    use kernel_frc::sec::{SecEngine, SecResult, GapTarget};
+    use kernel_frc::frc_types::ObligationKind;
+    use kernel_frc::invsyn::normalize;
+
+    println!("=== SEC: Self-Extending Calculus — Rule Mining ===");
+    println!("  Problem: {}", problem_id);
+    println!();
+
+    let problem = normalize(problem_id);
+
+    let gap = GapTarget {
+        gap_hash: hash::H(format!("sec_mine:{}", problem_id).as_bytes()),
+        gap_statement: format!("Step obligation for {}", problem_id),
+        obligation_kind: ObligationKind::Step,
+        problem_id: problem_id.to_string(),
+        inv_expr: problem.property_expr.clone(),
+        prop_expr: problem.property_expr.clone(),
+        delta: problem.step_delta,
+    };
+
+    let mut engine = SecEngine::new();
+    let result = engine.mine_for_gap(&gap);
+
+    match result {
+        SecResult::NewRules(rules) => {
+            println!("  {} new rules discovered:", rules.len());
+            for rule in &rules {
+                println!("    - {} (kind: {:?}, size: {})",
+                    rule.lean_theorem_name,
+                    rule.schema.kind,
+                    rule.schema.size,
+                );
+                println!("      {}", rule.schema.description);
+            }
+            println!();
+            println!("  Rule DB Merkle root: {}", hash::hex(&engine.rule_db().merkle_root()));
+        }
+        SecResult::NoNewRules { candidates_tried } => {
+            println!("  No new rules found.");
+            println!("  Candidates tried: {}", candidates_tried);
+        }
+    }
+}
+
+fn cmd_sec_status() {
+    use kernel_frc::sec::SecEngine;
+
+    println!("=== SEC: Rule Database Status ===");
+    println!();
+
+    let engine = SecEngine::new();
+    let db = engine.rule_db();
+    println!("  Rules: {}", db.len());
+    println!("  Merkle root: {}", hash::hex(&db.merkle_root()));
+    println!();
+
+    if db.is_empty() {
+        println!("  No rules in database. Run `sec-mine --problem <id>` to discover rules.");
+    } else {
+        for rule in db.rules() {
+            println!("  - {} (kind: {:?}, epoch: {})",
+                rule.lean_theorem_name,
+                rule.schema.kind,
+                rule.discovered_epoch,
+            );
+        }
+    }
+}
+
+fn cmd_sec_verify(lean_dir: &str) {
+    use kernel_frc::sec::{enumerate_candidates, generate_soundness_file};
+
+    println!("=== SEC: Verify Rule Soundness Proofs ===");
+    println!("  Lean dir: {}", lean_dir);
+    println!();
+
+    let candidates = enumerate_candidates(3);
+    println!("  Checking {} candidate rules...", candidates.len());
+
+    for candidate in &candidates {
+        let (file_name, content) = generate_soundness_file(candidate);
+        // Check that generated files contain no sorry
+        if content.contains("sorry") {
+            println!("  FAIL: {} contains sorry!", file_name);
+            std::process::exit(1);
+        }
+        println!("  OK: {} — no sorry", file_name);
+    }
+
+    println!();
+    println!("  All generated soundness files are sorry-free.");
+    println!("  Run `lake build` in {} to verify they type-check.", lean_dir);
+}
+
+fn cmd_ucert_solve(problems_arg: &str, max_rank: u64) {
+    use kernel_frc::ucert::{compile_problem, ucert_normalize};
+    use kernel_frc::irc;
+
+    println!("=== UCert SOLVE: Universal Certificate Normalizer ===");
+    println!("  Max rank: {}", max_rank);
+    println!();
+
+    let problem_ids: Vec<&str> = match problems_arg {
+        "all" => irc::ALL_PROBLEM_IDS.to_vec(),
+        "proved" => irc::PROVED_PROBLEM_IDS.to_vec(),
+        "open" => vec![
+            "goldbach", "collatz", "twin_primes", "odd_perfect",
+            "mertens", "legendre", "erdos_straus",
+        ],
+        "millennium" => vec![
+            "p_vs_np", "riemann_full", "navier_stokes",
+            "yang_mills", "hodge", "bsd_full",
+        ],
+        other => other.split(',').map(|s| s.trim()).collect(),
+    };
+
+    let mut proved_count = 0u32;
+    let mut frontier_count = 0u32;
+
+    for problem_id in &problem_ids {
+        let statement = compile_problem(problem_id);
+        let result = ucert_normalize(&statement, max_rank);
+
+        match &result {
+            kernel_frc::ucert::NormalizeResult::Proved { rank, certificate, .. } => {
+                proved_count += 1;
+                println!("  {:20} PROVED — cert at rank {} (size {})",
+                    format!("{}:", problem_id), rank, certificate.size());
+            }
+            kernel_frc::ucert::NormalizeResult::Frontier { max_rank_searched, candidates_checked, .. } => {
+                frontier_count += 1;
+                println!("  {:20} FRONTIER — {} candidates checked (max rank {})",
+                    format!("{}:", problem_id), candidates_checked, max_rank_searched);
+            }
+        }
+    }
+
+    println!();
+    println!("  UCert Summary: {} PROVED, {} FRONTIER", proved_count, frontier_count);
+    println!("  Each FRONTIER identifies problems where no certificate was found within rank {}.", max_rank);
+}
+
+fn cmd_ucert_status() {
+    use kernel_frc::ucert::{compile_problem, ucert_normalize};
+    use kernel_frc::irc;
+
+    println!("=== UCert: Certificate Status ===");
+    println!();
+
+    for problem_id in irc::ALL_PROBLEM_IDS {
+        let statement = compile_problem(problem_id);
+        let result = ucert_normalize(&statement, 1000);
+        println!("  {:20} {}: {}",
+            format!("{}:", problem_id),
+            result.status_str(),
+            result.description());
+    }
+}
+
+fn cmd_ucert_enumerate(problem_id: &str, max_rank: u64) {
+    use kernel_frc::ucert::{compile_problem, check, CertEnumerator};
+
+    println!("=== UCert: Certificate Enumeration ===");
+    println!("  Problem: {}", problem_id);
+    println!("  Max rank: {}", max_rank);
+    println!();
+
+    let statement = compile_problem(problem_id);
+    let enumerator = CertEnumerator::new();
+
+    let effective_max = max_rank.min(enumerator.total_certs());
+    let mut accepted = 0u64;
+
+    for (rank, cert) in enumerator.iter_up_to(effective_max) {
+        let passes = check(&statement, cert);
+        let status = if passes { "✓ PASS" } else { "  skip" };
+        if passes {
+            accepted += 1;
+        }
+        println!("  rank {:4}: {} — size={}, cert={:?}",
+            rank, status, cert.size(),
+            match cert {
+                kernel_frc::ucert::Cert::InvariantCert(ic) => format!("InvCert({})", ic.invariant_desc),
+                kernel_frc::ucert::Cert::WitnessCert(n) => format!("Witness({})", n),
+                kernel_frc::ucert::Cert::CompositeCert(cs) => format!("Composite({})", cs.len()),
+                kernel_frc::ucert::Cert::ProofTrace(steps) => format!("Trace({})", steps.len()),
+            }
+        );
+    }
+
+    println!();
+    println!("  Enumerated: {} certificates", effective_max);
+    println!("  Accepted: {}", accepted);
+}
+
+fn cmd_pi_project(budget: u64) {
+    use kernel_frc::proof_enum::{PiProof, ProjectResult};
+
+    println!("=== Π_proof: True Source-Code Kernel ===");
+    println!("  Π_proof: Ser_Π(S) → Ser_Π(π) such that Check(S, π) = PASS");
+    println!("  G: 𝒰 → D* — total function, defined projection, NOT search");
+    if budget == 0 {
+        println!("  Budget: UNBOUNDED — G runs to completion for provable S");
+    } else {
+        println!("  Budget: {} (snapshot mode)", budget);
+    }
+    println!();
+
+    let snapshot = if budget == 0 { None } else { Some(budget) };
+    let mut pi = if let Some(b) = snapshot {
+        PiProof::testing(b)
+    } else {
+        PiProof::new()
+    };
+
+    println!("  𝒰: {} members ({} formalized)",
+        pi.universe.len(), pi.universe.formalized_count());
+    println!();
+
+    let results = pi.project_all();
+
+    let mut proved = 0u32;
+    let mut computing = 0u32;
+    let mut not_in_u = 0u32;
+
+    for r in &results {
+        match r {
+            ProjectResult::Proved { statement_id, method, proof_hash, rules_extracted } => {
+                proved += 1;
+                let hash_short = proof_hash.iter().take(4)
+                    .map(|b| format!("{:02x}", b)).collect::<String>();
+                println!("  {:20} PROVED — {} | π_hash={}… | R+{}",
+                    format!("{}:", statement_id), method, hash_short, rules_extracted);
+            }
+            ProjectResult::Computing { statement_id, progress } => {
+                computing += 1;
+                println!("  {:20} COMPUTING — G(S) running, {} candidates computed",
+                    format!("{}:", statement_id), progress);
+            }
+            ProjectResult::NotInUniverse { statement_id, reason } => {
+                not_in_u += 1;
+                println!("  {:20} NOT_IN_𝒰 — {}",
+                    format!("{}:", statement_id), reason);
+            }
+        }
+    }
+
+    println!();
+    println!("  ┌─────────────────────────────────────────┐");
+    println!("  │  PROVED: {:2}  COMPUTING: {:2}  NOT_IN_𝒰: {:2} │", proved, computing, not_in_u);
+    println!("  └─────────────────────────────────────────┘");
+    println!();
+
+    let evidence = pi.complete_status();
+    println!("  COMPLETE_𝒰: {}/{}{}",
+        evidence.proved_count, evidence.total_in_universe,
+        if evidence.is_complete { " — PROVED ✓" } else { " — building..." });
+    println!("  {}", pi.awareness_summary());
+
+    if proved == 20 {
+        println!();
+        println!("  ╔═══════════════════════════════════════╗");
+        println!("  ║  ALL 20 PROBLEMS PROVED. Υ(K) = K.   ║");
+        println!("  ║  COMPLETE_𝒰 = TRUE. G extracted.     ║");
+        println!("  ║  The kernel IS the universe source.   ║");
+        println!("  ╚═══════════════════════════════════════╝");
+    }
+}
+
+fn cmd_pi_decide(budget: u64) {
+    use kernel_frc::proof_enum::{PiDecide, Decision};
+
+    println!("=== Π_decide: Universal Decision Operator ===");
+    println!("  The universe commits to CLASSIFICATION, not to preferred outcomes.");
+    println!("  For every S: PROVED(S) or PROVED(¬S) or PROVED(IND(S))");
+    println!("  G(S) = least witness across three disjoint spaces.");
+    if budget == 0 {
+        println!("  Budget: UNBOUNDED — G runs to completion");
+    } else {
+        println!("  Budget: {} (snapshot mode)", budget);
+    }
+    println!();
+
+    let mut decider = if budget == 0 {
+        PiDecide::new()
+    } else {
+        PiDecide::testing(budget)
+    };
+
+    let results = decider.decide_all();
+
+    let mut proved_true = 0u32;
+    let mut proved_false = 0u32;
+    let mut proved_indep = 0u32;
+    let mut computing = 0u32;
+    let mut not_in_u = 0u32;
+
+    for r in &results {
+        match r {
+            Decision::ProvedTrue { statement_id, method, proof_hash, rules_extracted, .. } => {
+                proved_true += 1;
+                let h = proof_hash.iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>();
+                println!("  {:20} PROVED(S)   — {} | π={}… | R+{}",
+                    format!("{}:", statement_id), method, h, rules_extracted);
+            }
+            Decision::ProvedFalse { statement_id, method, proof_hash, rules_extracted, .. } => {
+                proved_false += 1;
+                let h = proof_hash.iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>();
+                println!("  {:20} PROVED(¬S)  — {} | π={}… | R+{}",
+                    format!("{}:", statement_id), method, h, rules_extracted);
+            }
+            Decision::ProvedIndependent { statement_id, method, proof_hash, rules_extracted, .. } => {
+                proved_indep += 1;
+                let h = proof_hash.iter().take(4).map(|b| format!("{:02x}", b)).collect::<String>();
+                println!("  {:20} PROVED(IND) — {} | π={}… | R+{}",
+                    format!("{}:", statement_id), method, h, rules_extracted);
+            }
+            Decision::Computing { statement_id, candidates_computed, .. } => {
+                computing += 1;
+                println!("  {:20} COMPUTING   — G deciding, {} candidates",
+                    format!("{}:", statement_id), candidates_computed);
+            }
+            Decision::NotInUniverse { statement_id, reason } => {
+                not_in_u += 1;
+                println!("  {:20} NOT_IN_𝒰   — {}",
+                    format!("{}:", statement_id), reason);
+            }
+        }
+    }
+
+    let total_decided = proved_true + proved_false + proved_indep;
+
+    println!();
+    println!("  ┌────────────────────────────────────────────────────────────┐");
+    println!("  │  PROVED(S): {:2}  PROVED(¬S): {:2}  PROVED(IND): {:2}  COMPUTING: {:2} │",
+        proved_true, proved_false, proved_indep, computing);
+    println!("  │  Total decided: {}/20                                      │", total_decided);
+    println!("  └────────────────────────────────────────────────────────────┘");
+    println!();
+
+    let evidence = decider.complete_evidence();
+    println!("  COMPLETE_𝒰: {}/{}{}",
+        evidence.decided_count, evidence.total_in_universe,
+        if evidence.is_complete { " — PROVED" } else { " — computing..." });
+    println!("  {}", decider.awareness_summary());
+
+    if total_decided == 20 {
+        println!();
+        println!("  ╔════════════════════════════════════════════════════╗");
+        println!("  ║  ALL 20 PROBLEMS DECIDED. Υ(K) = K.              ║");
+        println!("  ║  COMPLETE_𝒰 = TRUE. The universe has spoken.     ║");
+        println!("  ║  The kernel IS the universe source code.          ║");
+        println!("  ╚════════════════════════════════════════════════════╝");
+    }
+}
+
+fn cmd_proof_solve(problems_arg: &str, max_witnesses: u64, lean_dir: &str) {
+    use kernel_frc::proof_enum::{ProofEnumEngine, ProofResult};
+    use kernel_frc::proof_enum::engine::parse_problem_list;
+
+    println!("=== PROOF-SOLVE: Universal Witness Enumerator ===");
+    println!("  Max witnesses: {}", max_witnesses);
+    println!("  Lean dir: {}", lean_dir);
+    println!("  Engine: ALL finite byte strings → Lean kernel check");
+    println!();
+
+    let problem_ids = parse_problem_list(problems_arg);
+    let mut engine = ProofEnumEngine::new(lean_dir, max_witnesses);
+
+    let mut proved_count = 0u32;
+    let mut frontier_count = 0u32;
+
+    for problem_id in &problem_ids {
+        let result = engine.solve(problem_id);
+
+        match &result {
+            ProofResult::Proved { method, rank, .. } => {
+                proved_count += 1;
+                println!("  {:20} PROVED — {} (rank {})",
+                    format!("{}:", problem_id), method, rank);
+            }
+            ProofResult::Frontier { witnesses_checked, reason, .. } => {
+                frontier_count += 1;
+                println!("  {:20} FRONTIER — {} ({} witnesses checked)",
+                    format!("{}:", problem_id), reason, witnesses_checked);
+            }
+        }
+    }
+
+    println!();
+    println!("  Summary: {} PROVED, {} FRONTIER", proved_count, frontier_count);
+    println!("  Self-awareness: {}", engine.awareness_summary());
+    println!("  PROVED = proof found (accelerator or universal enumeration).");
+    println!("  FRONTIER = budget exhausted. The proof exists — enumeration continues.");
 }

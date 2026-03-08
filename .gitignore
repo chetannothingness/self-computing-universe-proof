@@ -3,3 +3,11 @@
 *.pdb
 .DS_Store
 *.swp
+
+# Lean build artifacts
+lean/.lake/
+lean/lake-packages/
+lean/build/
+*.olean
+*.ilean
+*.trace

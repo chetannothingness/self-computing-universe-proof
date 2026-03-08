@@ -13,6 +13,7 @@ members = [
     "kernel-bench",
     "kernel-spaceengine",
     "kernel-frc",
+    "kernel-lean",
     "kernel-cli",
     "agi-proof",
 ]

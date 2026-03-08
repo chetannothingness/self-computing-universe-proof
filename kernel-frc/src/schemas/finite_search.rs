@@ -236,6 +236,7 @@ impl Schema for FiniteSearchSchema {
             b_star,
             reduction_chain: vec![reduction_step],
             proof_hash: ProofEq::compute_hash(&statement_hash, &prog_hash, b_star, &[]),
+            lean_proof: None,
         };
 
         let proof_total = ProofTotal {
@@ -243,6 +244,7 @@ impl Schema for FiniteSearchSchema {
             b_star,
             halting_argument: format!("Finite domain enumeration, bounded by {} steps", b_star),
             proof_hash: ProofTotal::compute_hash(&prog_hash, b_star, "finite enumeration"),
+            lean_proof: None,
         };
 
         SchemaResult::Success(Frc::new(program, b_star, proof_eq, proof_total, self.id(), statement_hash))

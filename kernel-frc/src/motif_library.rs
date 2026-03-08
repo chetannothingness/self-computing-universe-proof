@@ -106,12 +106,14 @@ mod tests {
             b_star: 10,
             reduction_chain: vec![],
             proof_hash: hash::H(b"eq"),
+            lean_proof: None,
         };
         let proof_total = ProofTotal {
             program_hash: prog_hash,
             b_star: 10,
             halting_argument: "trivial".to_string(),
             proof_hash: hash::H(b"total"),
+            lean_proof: None,
         };
 
         Frc::new(prog, 10, proof_eq, proof_total, SchemaId::FiniteSearch, stmt)

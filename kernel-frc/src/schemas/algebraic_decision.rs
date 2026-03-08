@@ -174,6 +174,7 @@ impl Schema for AlgebraicDecisionSchema {
                         step_hash: hash::H(&[statement_hash.as_slice(), prog_hash.as_slice()].concat()),
                     }],
                     proof_hash: ProofEq::compute_hash(&statement_hash, &prog_hash, b_star, &[]),
+                    lean_proof: None,
                 };
 
                 let proof_total = ProofTotal {
@@ -181,6 +182,7 @@ impl Schema for AlgebraicDecisionSchema {
                     b_star,
                     halting_argument: format!("Bounded polynomial root search: {} evaluations", domain_size),
                     proof_hash: ProofTotal::compute_hash(&prog_hash, b_star, "algebraic decision"),
+                    lean_proof: None,
                 };
 
                 return SchemaResult::Success(Frc::new(
@@ -223,6 +225,7 @@ impl Schema for AlgebraicDecisionSchema {
                 step_hash: hash::H(&[statement_hash.as_slice(), prog_hash.as_slice()].concat()),
             }],
             proof_hash: ProofEq::compute_hash(&statement_hash, &prog_hash, b_star, &[]),
+            lean_proof: None,
         };
 
         let proof_total = ProofTotal {
@@ -230,6 +233,7 @@ impl Schema for AlgebraicDecisionSchema {
             b_star,
             halting_argument: format!("Bounded search: {} evaluations", domain_size),
             proof_hash: ProofTotal::compute_hash(&prog_hash, b_star, "algebraic bounded"),
+            lean_proof: None,
         };
 
         SchemaResult::Success(Frc::new(program, b_star, proof_eq, proof_total, self.id(), statement_hash))

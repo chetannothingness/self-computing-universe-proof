@@ -111,6 +111,7 @@ pub fn build_millennium_frc(
         b_star,
         reduction_chain: vec![reduction_step],
         proof_hash: ProofEq::compute_hash(&contract.qid, &prog_hash, b_star, &[]),
+        lean_proof: None,
     };
 
     let halting_argument = format!(
@@ -122,6 +123,7 @@ pub fn build_millennium_frc(
         b_star,
         halting_argument: halting_argument.clone(),
         proof_hash: ProofTotal::compute_hash(&prog_hash, b_star, &halting_argument),
+        lean_proof: None,
     };
 
     // Execute VM to verify

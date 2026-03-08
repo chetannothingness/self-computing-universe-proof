@@ -1,0 +1,9 @@
+{
+  "gap_id": "gap_005",
+  "gap_hash": "pending_computation",
+  "blocks": ["hodge"],
+  "statement": "Decidable algebraicity of Hodge classes on projective varieties of bounded dimension and degree",
+  "schema_tried": "AlgebraicDecision",
+  "status": "OPEN",
+  "notes": "No finite decision procedure known even for bounded dimension and degree"
+}

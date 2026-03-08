@@ -187,6 +187,7 @@ impl Schema for CertifiedNumericsSchema {
                 step_hash: hash::H(&[statement_hash.as_slice(), prog_hash.as_slice()].concat()),
             }],
             proof_hash: ProofEq::compute_hash(&statement_hash, &prog_hash, b_star, &[]),
+            lean_proof: None,
         };
 
         let proof_total = ProofTotal {
@@ -194,6 +195,7 @@ impl Schema for CertifiedNumericsSchema {
             b_star,
             halting_argument: format!("{} intervals × 40 steps = {} total", n_intervals, b_star),
             proof_hash: ProofTotal::compute_hash(&prog_hash, b_star, "certified numerics"),
+            lean_proof: None,
         };
 
         SchemaResult::Success(Frc::new(program, b_star, proof_eq, proof_total, self.id(), statement_hash))

@@ -250,12 +250,14 @@ impl FrcSearch {
                         b_star,
                         reduction_chain: vec![],
                         proof_hash: ProofEq::compute_hash(&gap_hash, &prog_hash, b_star, &[]),
+                        lean_proof: None,
                     };
                     let proof_total = ProofTotal {
                         program_hash: prog_hash,
                         b_star,
                         halting_argument: "sub-contract gap closure".to_string(),
                         proof_hash: ProofTotal::compute_hash(&prog_hash, b_star, "sub-contract"),
+                        lean_proof: None,
                     };
                     let frc = Frc::new(program, b_star, proof_eq, proof_total,
                         SchemaId::FiniteSearch, gap_hash);

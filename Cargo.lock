@@ -967,6 +967,7 @@ dependencies = [
  "kernel-frc",
  "kernel-goldmaster",
  "kernel-instruments",
+ "kernel-lean",
  "kernel-ledger",
  "kernel-self",
  "kernel-solver",
@@ -1026,6 +1027,20 @@ dependencies = [
  "kernel-ledger",
  "kernel-types",
  "serde",
+]
+
+[[package]]
+name = "kernel-lean"
+version = "0.1.0"
+dependencies = [
+ "blake3",
+ "kernel-cap",
+ "kernel-contracts",
+ "kernel-frc",
+ "kernel-ledger",
+ "kernel-types",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

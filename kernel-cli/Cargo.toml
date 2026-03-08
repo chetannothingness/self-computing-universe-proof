@@ -20,6 +20,7 @@ kernel-web = { path = "../kernel-web" }
 kernel-spaceengine = { path = "../kernel-spaceengine" }
 kernel-bench = { path = "../kernel-bench" }
 kernel-frc = { path = "../kernel-frc" }
+kernel-lean = { path = "../kernel-lean" }
 agi-proof = { path = "../agi-proof" }
 blake3 = { workspace = true }
 serde = { workspace = true }

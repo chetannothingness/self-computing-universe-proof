@@ -136,6 +136,7 @@ impl Schema for EffectiveCompactnessSchema {
                 step_hash: hash::H(&[statement_hash.as_slice(), prog_hash.as_slice()].concat()),
             }],
             proof_hash: ProofEq::compute_hash(&statement_hash, &prog_hash, b_star, &[]),
+            lean_proof: None,
         };
 
         let proof_total = ProofTotal {
@@ -143,6 +144,7 @@ impl Schema for EffectiveCompactnessSchema {
             b_star,
             halting_argument: format!("ε-net check: {} points × 15 steps = {} total", n_points, b_star),
             proof_hash: ProofTotal::compute_hash(&prog_hash, b_star, "epsilon-net enumeration"),
+            lean_proof: None,
         };
 
         SchemaResult::Success(Frc::new(program, b_star, proof_eq, proof_total, self.id(), statement_hash))

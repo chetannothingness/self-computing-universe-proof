@@ -1,0 +1,9 @@
+{
+  "gap_id": "gap_004",
+  "gap_hash": "pending_computation",
+  "blocks": ["yang_mills"],
+  "statement": "Lattice-to-continuum mass gap certificate for SU(2) Yang-Mills on R⁴",
+  "schema_tried": "EffectiveCompactness",
+  "status": "OPEN",
+  "notes": "Constructive QFT required; no known finite certificate for continuum limit with mass gap"
+}

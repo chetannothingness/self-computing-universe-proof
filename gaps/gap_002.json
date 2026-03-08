@@ -1,0 +1,9 @@
+{
+  "gap_id": "gap_002",
+  "gap_hash": "pending_computation",
+  "blocks": ["riemann_full"],
+  "statement": "Certified zero-verification for ζ(s) extended to arbitrary height T with computable bound B*(T)",
+  "schema_tried": "CertifiedNumerics",
+  "status": "OPEN",
+  "notes": "Bounded Mertens fragment is verifiable; full RH requires infinite zero verification"
+}

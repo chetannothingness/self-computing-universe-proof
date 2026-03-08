@@ -1,0 +1,247 @@
+# O.toml — Machine-readable problem registry
+# Links Lean4 statements to Rust-side statement_hash in ProofEq.
+# Each entry specifies the problem ID, status, statement file, and schema used.
+
+[universe]
+version = "1.1.0"
+lean_version = "v4.16.0"
+total_problems = 20
+verified_count = 14
+invalid_count = 6
+
+[irc]
+framework_file = "KernelVm/Invariant.lean"
+invsyn_file = "KernelVm/InvSyn.lean"
+deciders_file = "KernelVm/Deciders.lean"
+soundness_file = "KernelVm/Soundness.lean"
+irc_proved = 14
+irc_frontier = 6
+discharge_method = "InvSyn"
+
+# ============================================================
+# VERIFIED problems — FRC exists, VM program halts with code 1
+# ============================================================
+
+[[problems]]
+id = "goldbach"
+name = "Goldbach Conjecture (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/Goldbach/Statement.lean"
+invariant_file = "OpenProblems/Goldbach/Invariant.lean"
+irc_status = "PROVED"
+schema = "BoundedCounterexample"
+predicate = "goldbachBounded"
+default_params = { lo = 4, hi = 100 }
+
+[[problems]]
+id = "collatz"
+name = "Collatz Conjecture (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/Collatz/Statement.lean"
+invariant_file = "OpenProblems/Collatz/Invariant.lean"
+irc_status = "PROVED"
+schema = "BoundedCounterexample"
+predicate = "collatzBounded"
+default_params = { hi = 100, maxIter = 500 }
+
+[[problems]]
+id = "twin_primes"
+name = "Twin Prime Conjecture (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/TwinPrimes/Statement.lean"
+invariant_file = "OpenProblems/TwinPrimes/Invariant.lean"
+irc_status = "PROVED"
+schema = "FiniteSearch"
+predicate = "twinPrimesBounded"
+default_params = { hi = 10000 }
+
+[[problems]]
+id = "flt"
+name = "Fermat's Last Theorem (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/FLT/Statement.lean"
+invariant_file = "OpenProblems/FLT/Invariant.lean"
+irc_status = "PROVED"
+schema = "BoundedCounterexample"
+predicate = "fltBounded"
+default_params = { maxExp = 10, maxBase = 40 }
+
+[[problems]]
+id = "odd_perfect"
+name = "Odd Perfect Number (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/OddPerfect/Statement.lean"
+invariant_file = "OpenProblems/OddPerfect/Invariant.lean"
+irc_status = "PROVED"
+schema = "BoundedCounterexample"
+predicate = "oddPerfectBounded"
+default_params = { hi = 1000 }
+
+[[problems]]
+id = "mersenne"
+name = "Mersenne Prime (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/Mersenne/Statement.lean"
+invariant_file = "OpenProblems/Mersenne/Invariant.lean"
+irc_status = "PROVED"
+schema = "FiniteSearch"
+predicate = "mersenneBounded"
+default_params = { maxP = 31 }
+
+[[problems]]
+id = "zfc_zero_ne_one"
+name = "ZFC 0 ≠ 1"
+status = "VERIFIED"
+statement_file = "OpenProblems/ZFC/Statement.lean"
+invariant_file = "OpenProblems/ZFC/Invariant.lean"
+irc_status = "PROVED"
+schema = "BoundedCounterexample"
+predicate = "zeroNeOne"
+default_params = {}
+
+[[problems]]
+id = "mertens"
+name = "Mertens Conjecture (RH fragment)"
+status = "VERIFIED"
+statement_file = "OpenProblems/Mertens/Statement.lean"
+invariant_file = "OpenProblems/Mertens/Invariant.lean"
+irc_status = "PROVED"
+schema = "BoundedCounterexample"
+predicate = "mertensBounded"
+default_params = { hi = 100 }
+
+[[problems]]
+id = "legendre"
+name = "Legendre's Conjecture (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/Legendre/Statement.lean"
+invariant_file = "OpenProblems/Legendre/Invariant.lean"
+irc_status = "PROVED"
+schema = "BoundedCounterexample"
+predicate = "legendreBounded"
+default_params = { hi = 50 }
+
+[[problems]]
+id = "erdos_straus"
+name = "Erdős–Straus Conjecture (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/ErdosStraus/Statement.lean"
+invariant_file = "OpenProblems/ErdosStraus/Invariant.lean"
+irc_status = "PROVED"
+schema = "FiniteSearch"
+predicate = "erdosStrausBounded"
+default_params = { hi = 100 }
+
+[[problems]]
+id = "bsd_ec_count"
+name = "BSD EC Point Count (Hasse bound)"
+status = "VERIFIED"
+statement_file = "OpenProblems/BSD/Statement.lean"
+invariant_file = "OpenProblems/BSD/Invariant.lean"
+irc_status = "PROVED"
+schema = "CertifiedNumerics"
+predicate = "bsdEcBounded"
+default_params = { p = 97 }
+
+[[problems]]
+id = "weak_goldbach"
+name = "Weak Goldbach Conjecture (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/WeakGoldbach/Statement.lean"
+invariant_file = "OpenProblems/WeakGoldbach/Invariant.lean"
+irc_status = "PROVED"
+schema = "BoundedCounterexample"
+predicate = "weakGoldbachBounded"
+default_params = { hi = 101 }
+
+[[problems]]
+id = "bertrand"
+name = "Bertrand's Postulate (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/Bertrand/Statement.lean"
+invariant_file = "OpenProblems/Bertrand/Invariant.lean"
+irc_status = "PROVED"
+schema = "BoundedCounterexample"
+predicate = "bertrandBounded"
+default_params = { hi = 100 }
+
+[[problems]]
+id = "lagrange_four_squares"
+name = "Lagrange's Four Squares (bounded)"
+status = "VERIFIED"
+statement_file = "OpenProblems/Lagrange/Statement.lean"
+invariant_file = "OpenProblems/Lagrange/Invariant.lean"
+irc_status = "PROVED"
+schema = "FiniteSearch"
+predicate = "lagrangeBounded"
+default_params = { hi = 100 }
+
+# ============================================================
+# INVALID problems — No FRC exists in current schema closure
+# ============================================================
+
+[[problems]]
+id = "p_vs_np"
+name = "P vs NP"
+status = "INVALID"
+frontier_file = "Frontier/PvsNP/MissingLemma.lean"
+invariant_file = "Frontier/PvsNP/Invariant.lean"
+irc_status = "FRONTIER"
+gap_obligation = "Step"
+schemas_tried = ["BoundedCounterexample", "FiniteSearch", "EffectiveCompactness", "ProofMining", "AlgebraicDecision", "InvSyn"]
+missing_lemma = "decidable enumeration of poly-time Turing machines"
+
+[[problems]]
+id = "riemann_full"
+name = "Riemann Hypothesis (full)"
+status = "INVALID"
+frontier_file = "Frontier/RiemannFull/MissingLemma.lean"
+invariant_file = "Frontier/RiemannFull/Invariant.lean"
+irc_status = "FRONTIER"
+gap_obligation = "Step"
+schemas_tried = ["BoundedCounterexample", "CertifiedNumerics", "EffectiveCompactness", "InvSyn"]
+missing_lemma = "certified zero-verification for ζ(s) extended to T → ∞"
+
+[[problems]]
+id = "navier_stokes"
+name = "Navier-Stokes Existence and Smoothness"
+status = "INVALID"
+frontier_file = "Frontier/NavierStokes/MissingLemma.lean"
+invariant_file = "Frontier/NavierStokes/Invariant.lean"
+irc_status = "FRONTIER"
+gap_obligation = "Step"
+schemas_tried = ["CertifiedNumerics", "EffectiveCompactness", "InvSyn"]
+missing_lemma = "discretization-to-continuum smoothness certificate"
+
+[[problems]]
+id = "yang_mills"
+name = "Yang-Mills Existence and Mass Gap"
+status = "INVALID"
+frontier_file = "Frontier/YangMills/MissingLemma.lean"
+invariant_file = "Frontier/YangMills/Invariant.lean"
+irc_status = "FRONTIER"
+gap_obligation = "Step"
+schemas_tried = ["CertifiedNumerics", "EffectiveCompactness", "InvSyn"]
+missing_lemma = "lattice-to-continuum mass gap certificate"
+
+[[problems]]
+id = "hodge"
+name = "Hodge Conjecture"
+status = "INVALID"
+frontier_file = "Frontier/Hodge/MissingLemma.lean"
+invariant_file = "Frontier/Hodge/Invariant.lean"
+irc_status = "FRONTIER"
+gap_obligation = "Step"
+schemas_tried = ["AlgebraicDecision", "EffectiveCompactness", "InvSyn"]
+missing_lemma = "decidable algebraicity of Hodge classes"
+
+[[problems]]
+id = "bsd_full"
+name = "BSD Conjecture (full)"
+status = "INVALID"
+frontier_file = "Frontier/BSDFull/MissingLemma.lean"
+invariant_file = "Frontier/BSDFull/Invariant.lean"
+irc_status = "FRONTIER"
+gap_obligation = "Step"
+schemas_tried = ["CertifiedNumerics", "AlgebraicDecision", "InvSyn"]
+missing_lemma = "certified L-function order of vanishing computation"

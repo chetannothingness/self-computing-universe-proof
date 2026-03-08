@@ -168,6 +168,7 @@ impl Schema for BoundedCounterexampleSchema {
             b_star,
             reduction_chain: vec![reduction_step],
             proof_hash: ProofEq::compute_hash(&statement_hash, &prog_hash, b_star, &[]),
+            lean_proof: None,
         };
 
         let proof_total = ProofTotal {
@@ -178,6 +179,7 @@ impl Schema for BoundedCounterexampleSchema {
                 lo, hi, b_star
             ),
             proof_hash: ProofTotal::compute_hash(&prog_hash, b_star, "bounded loop"),
+            lean_proof: None,
         };
 
         let frc = Frc::new(program, b_star, proof_eq, proof_total, self.id(), statement_hash);

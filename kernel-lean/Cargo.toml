@@ -1,0 +1,16 @@
+[package]
+name = "kernel-lean"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kernel-types = { path = "../kernel-types" }
+kernel-frc = { path = "../kernel-frc" }
+kernel-cap = { path = "../kernel-cap" }
+blake3 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+kernel-ledger = { path = "../kernel-ledger" }
+kernel-contracts = { path = "../kernel-contracts" }

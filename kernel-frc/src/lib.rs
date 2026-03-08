@@ -31,6 +31,11 @@ pub mod class_c;
 pub mod asm;
 pub mod open_problems;
 pub mod millennium_frc;
+pub mod irc;
+pub mod invsyn;
+pub mod sec;
+pub mod ucert;
+pub mod proof_enum;
 
 pub use vm::{Vm, Program, Instruction, VmOutcome, VmFault, VmState, ExecTrace};
 pub use frc_types::{
@@ -38,6 +43,10 @@ pub use frc_types::{
     FrontierWitness, Gap, MissingLemma,
     OpenProblemPackage, TargetClass, AllowedPrimitives, ExpectedOutput,
     FrcReceipt, KernelManifest, ClassC, FrcMetrics,
+    // IRC types
+    TransitionSystem, Invariant, InvariantKind,
+    IrcObligation, ObligationKind, ObligationStatus,
+    Irc, IrcResult, IrcFrontier, InvariantCandidate,
 };
 pub use schema::Schema;
 pub use gap_ledger::GapLedger;
@@ -45,3 +54,4 @@ pub use motif_library::MotifLibrary;
 pub use frc_search::FrcSearch;
 pub use opp::OppRunner;
 pub use opp_verify::OppVerifier;
+pub use irc::IrcSearch;

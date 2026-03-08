@@ -1,0 +1,9 @@
+{
+  "gap_id": "gap_003",
+  "gap_hash": "pending_computation",
+  "blocks": ["navier_stokes"],
+  "statement": "Discretization-to-continuum smoothness certificate for 3D incompressible Navier-Stokes",
+  "schema_tried": "CertifiedNumerics",
+  "status": "OPEN",
+  "notes": "No known discretization certifies smooth solutions exist for all time"
+}

@@ -27,6 +27,8 @@ pub enum SchemaId {
     CertifiedNumerics,
     /// User-defined / schema-induction-derived schema
     Derived(String),
+    /// SEC-derived rule schema
+    SEC(String),
 }
 
 impl SerPi for SchemaId {
@@ -49,6 +51,9 @@ pub struct ProofEq {
     pub b_star: u64,
     pub reduction_chain: Vec<ReductionStep>,
     pub proof_hash: Hash32,
+    /// Generated Lean4 proof term (populated when Lean generation is requested).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lean_proof: Option<String>,
 }
 
 impl ProofEq {
@@ -97,6 +102,9 @@ pub struct ProofTotal {
     pub b_star: u64,
     pub halting_argument: String,
     pub proof_hash: Hash32,
+    /// Generated Lean4 proof term (populated when Lean generation is requested).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lean_proof: Option<String>,
 }
 
 impl ProofTotal {
@@ -542,6 +550,332 @@ impl SerPi for FrcMetrics {
     }
 }
 
+// === Invariant Reduction Certificate (IRC) ===
+//
+// For a statement S ≡ ∀n, P(n), an IRC is:
+//   IRC(S) = (I, Base, Step, Link)
+// such that:
+//   I is a finite description of an invariant predicate I(n)
+//   Base proves I(0)
+//   Step proves ∀n, I(n) → I(n+1)
+//   Link proves ∀n, I(n) → P(n)
+//
+// Then ∀n, P(n) follows by Nat induction.
+// FRC becomes a subroutine for discharging Base/Step/Link obligations.
+
+/// A transition system modeling ∀n, P(n) as an induction target.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransitionSystem {
+    /// State space description, e.g. "Nat" or "(Nat, AuxState)"
+    pub state_desc: String,
+    /// Transition description, e.g. "n → n + 1"
+    pub transition_desc: String,
+    /// Property description, e.g. "P(n)"
+    pub property_desc: String,
+    /// Which problem this models
+    pub problem_id: String,
+    /// Deterministic hash of this transition system
+    pub ts_hash: Hash32,
+}
+
+impl TransitionSystem {
+    pub fn new(
+        state_desc: String,
+        transition_desc: String,
+        property_desc: String,
+        problem_id: String,
+    ) -> Self {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(state_desc.as_bytes());
+        buf.extend_from_slice(transition_desc.as_bytes());
+        buf.extend_from_slice(property_desc.as_bytes());
+        buf.extend_from_slice(problem_id.as_bytes());
+        let ts_hash = hash::H(&buf);
+
+        Self { state_desc, transition_desc, property_desc, problem_id, ts_hash }
+    }
+}
+
+impl SerPi for TransitionSystem {
+    fn ser_pi(&self) -> Vec<u8> {
+        kernel_types::serpi::canonical_cbor_bytes(self)
+    }
+}
+
+/// The kind of invariant being used.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum InvariantKind {
+    /// I(n) = ∀m ≤ n, Q(m) — prefix accumulator
+    Prefix,
+    /// I(n) = f(n) ≤ bound — monotone bounding
+    Bounding,
+    /// I(n) = R(n mod k) — periodic/modular
+    Modular,
+    /// I(n) = "state(n) ∈ S" for finite state set S
+    Structural,
+    /// Conjunction or implication chain of simpler invariants
+    Composite,
+    /// Problem-specific hand-crafted invariant
+    Specialized,
+    /// Derived via SEC (Self-Extending Calculus) proven rule
+    SECDerived,
+}
+
+impl SerPi for InvariantKind {
+    fn ser_pi(&self) -> Vec<u8> {
+        kernel_types::serpi::canonical_cbor_bytes(self)
+    }
+}
+
+/// An invariant — a finite description of a predicate I(n).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Invariant {
+    /// What kind of invariant
+    pub kind: InvariantKind,
+    /// Human-readable description
+    pub description: String,
+    /// Lean4-compatible formal definition
+    pub formal_def: String,
+    /// Deterministic hash
+    pub invariant_hash: Hash32,
+}
+
+impl Invariant {
+    pub fn new(kind: InvariantKind, description: String, formal_def: String) -> Self {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&kind.ser_pi());
+        buf.extend_from_slice(description.as_bytes());
+        buf.extend_from_slice(formal_def.as_bytes());
+        let invariant_hash = hash::H(&buf);
+
+        Self { kind, description, formal_def, invariant_hash }
+    }
+}
+
+impl SerPi for Invariant {
+    fn ser_pi(&self) -> Vec<u8> {
+        kernel_types::serpi::canonical_cbor_bytes(self)
+    }
+}
+
+/// Which obligation in the IRC triple (Base, Step, Link).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ObligationKind {
+    /// I(0) — the base case
+    Base,
+    /// ∀n, I(n) → I(n+1) — the inductive step
+    Step,
+    /// ∀n, I(n) → P(n) — the link to the target property
+    Link,
+}
+
+impl SerPi for ObligationKind {
+    fn ser_pi(&self) -> Vec<u8> {
+        kernel_types::serpi::canonical_cbor_bytes(self)
+    }
+}
+
+/// Status of an IRC obligation — discharged or gap.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ObligationStatus {
+    /// Discharged by a proof (FRC, algebraic, or symbolic)
+    Discharged {
+        method: String,
+        proof_hash: Hash32,
+        lean_proof: Option<String>,
+    },
+    /// Could not be discharged — this IS the gap
+    Gap {
+        reason: String,
+        attempted_methods: Vec<String>,
+    },
+}
+
+impl SerPi for ObligationStatus {
+    fn ser_pi(&self) -> Vec<u8> {
+        kernel_types::serpi::canonical_cbor_bytes(self)
+    }
+}
+
+/// A proof obligation: Base, Step, or Link.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IrcObligation {
+    /// Which of the three obligations
+    pub kind: ObligationKind,
+    /// Formal statement of the obligation
+    pub statement: String,
+    /// Whether it has been discharged
+    pub status: ObligationStatus,
+    /// Deterministic hash
+    pub obligation_hash: Hash32,
+}
+
+impl IrcObligation {
+    pub fn new(kind: ObligationKind, statement: String, status: ObligationStatus) -> Self {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&kind.ser_pi());
+        buf.extend_from_slice(statement.as_bytes());
+        buf.extend_from_slice(&status.ser_pi());
+        let obligation_hash = hash::H(&buf);
+
+        Self { kind, statement, status, obligation_hash }
+    }
+
+    pub fn is_discharged(&self) -> bool {
+        matches!(self.status, ObligationStatus::Discharged { .. })
+    }
+}
+
+impl SerPi for IrcObligation {
+    fn ser_pi(&self) -> Vec<u8> {
+        kernel_types::serpi::canonical_cbor_bytes(self)
+    }
+}
+
+/// Invariant Reduction Certificate — complete proof of ∀n, P(n) via induction.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Irc {
+    /// The transition system being proved
+    pub transition_system: TransitionSystem,
+    /// The invariant I(n)
+    pub invariant: Invariant,
+    /// I(0)
+    pub base: IrcObligation,
+    /// ∀n, I(n) → I(n+1)
+    pub step: IrcObligation,
+    /// ∀n, I(n) → P(n)
+    pub link: IrcObligation,
+    /// Hash of the target statement
+    pub statement_hash: Hash32,
+    /// Hash of the entire IRC
+    pub irc_hash: Hash32,
+}
+
+impl Irc {
+    pub fn new(
+        transition_system: TransitionSystem,
+        invariant: Invariant,
+        base: IrcObligation,
+        step: IrcObligation,
+        link: IrcObligation,
+        statement_hash: Hash32,
+    ) -> Self {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&transition_system.ser_pi());
+        buf.extend_from_slice(&invariant.ser_pi());
+        buf.extend_from_slice(&base.ser_pi());
+        buf.extend_from_slice(&step.ser_pi());
+        buf.extend_from_slice(&link.ser_pi());
+        buf.extend_from_slice(&statement_hash);
+        let irc_hash = hash::H(&buf);
+
+        Self { transition_system, invariant, base, step, link, statement_hash, irc_hash }
+    }
+
+    /// Count how many obligations are discharged (0-3).
+    pub fn obligations_discharged(&self) -> u8 {
+        let mut count = 0u8;
+        if self.base.is_discharged() { count += 1; }
+        if self.step.is_discharged() { count += 1; }
+        if self.link.is_discharged() { count += 1; }
+        count
+    }
+
+    /// True iff all three obligations are discharged — complete proof.
+    pub fn is_complete(&self) -> bool {
+        self.obligations_discharged() == 3
+    }
+
+    /// Verify internal consistency: hashes match, obligations bind correctly.
+    pub fn verify_internal(&self) -> bool {
+        // Recompute IRC hash
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&self.transition_system.ser_pi());
+        buf.extend_from_slice(&self.invariant.ser_pi());
+        buf.extend_from_slice(&self.base.ser_pi());
+        buf.extend_from_slice(&self.step.ser_pi());
+        buf.extend_from_slice(&self.link.ser_pi());
+        buf.extend_from_slice(&self.statement_hash);
+
+        if hash::H(&buf) != self.irc_hash {
+            return false;
+        }
+
+        // Verify obligation kinds are correct
+        if self.base.kind != ObligationKind::Base { return false; }
+        if self.step.kind != ObligationKind::Step { return false; }
+        if self.link.kind != ObligationKind::Link { return false; }
+
+        true
+    }
+}
+
+impl SerPi for Irc {
+    fn ser_pi(&self) -> Vec<u8> {
+        kernel_types::serpi::canonical_cbor_bytes(self)
+    }
+}
+
+/// Result of IRC search.
+#[derive(Debug, Clone)]
+pub enum IrcResult {
+    /// All three obligations discharged — complete proof of ∀n, P(n)
+    Proved(Irc),
+    /// At least one obligation remains as a gap
+    Frontier(IrcFrontier),
+}
+
+/// IRC frontier — documents what was tried and what failed.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IrcFrontier {
+    pub statement_hash: Hash32,
+    pub candidates_tried: Vec<InvariantCandidate>,
+    pub best_candidate: Option<Irc>,
+    pub frontier_hash: Hash32,
+}
+
+impl IrcFrontier {
+    pub fn new(
+        statement_hash: Hash32,
+        candidates_tried: Vec<InvariantCandidate>,
+        best_candidate: Option<Irc>,
+    ) -> Self {
+        let mut buf = Vec::new();
+        buf.extend_from_slice(&statement_hash);
+        for c in &candidates_tried {
+            buf.extend_from_slice(&c.ser_pi());
+        }
+        if let Some(ref irc) = best_candidate {
+            buf.extend_from_slice(&irc.ser_pi());
+        }
+        let frontier_hash = hash::H(&buf);
+
+        Self { statement_hash, candidates_tried, best_candidate, frontier_hash }
+    }
+}
+
+impl SerPi for IrcFrontier {
+    fn ser_pi(&self) -> Vec<u8> {
+        kernel_types::serpi::canonical_cbor_bytes(self)
+    }
+}
+
+/// Record of an invariant candidate attempt.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InvariantCandidate {
+    pub invariant: Invariant,
+    pub base_status: ObligationStatus,
+    pub step_status: ObligationStatus,
+    pub link_status: ObligationStatus,
+    pub obligations_discharged: u8,
+}
+
+impl SerPi for InvariantCandidate {
+    fn ser_pi(&self) -> Vec<u8> {
+        kernel_types::serpi::canonical_cbor_bytes(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -570,6 +904,7 @@ mod tests {
                 step_hash: hash::H(b"step1"),
             }],
             proof_hash: hash::H(b"proof_eq"),
+            lean_proof: None,
         };
 
         let proof_total = ProofTotal {
@@ -577,6 +912,7 @@ mod tests {
             b_star: 100,
             halting_argument: "program has 2 instructions, halts at instruction 1".to_string(),
             proof_hash: hash::H(b"proof_total"),
+            lean_proof: None,
         };
 
         Frc::new(prog, 100, proof_eq, proof_total, SchemaId::FiniteSearch, stmt_hash)
@@ -609,6 +945,7 @@ mod tests {
             b_star: 100,
             reduction_chain: vec![],
             proof_hash: hash::H(b"eq1"),
+            lean_proof: None,
         };
         let proof_eq2 = ProofEq {
             statement_hash: stmt2,
@@ -616,6 +953,7 @@ mod tests {
             b_star: 100,
             reduction_chain: vec![],
             proof_hash: hash::H(b"eq2"),
+            lean_proof: None,
         };
 
         let pt = ProofTotal {
@@ -623,6 +961,7 @@ mod tests {
             b_star: 100,
             halting_argument: "halts".to_string(),
             proof_hash: hash::H(b"pt"),
+            lean_proof: None,
         };
 
         let frc1 = Frc::new(prog.clone(), 100, proof_eq1, pt.clone(), SchemaId::FiniteSearch, stmt1);
@@ -737,5 +1076,155 @@ mod tests {
             hash::H(b"schemas"), hash::H(b"motifs"), hash::H(b"class_c"),
         );
         assert_eq!(m1.manifest_hash, m2.manifest_hash);
+    }
+
+    // === IRC tests ===
+
+    fn make_test_ts() -> TransitionSystem {
+        TransitionSystem::new(
+            "Nat".to_string(),
+            "n → n + 1".to_string(),
+            "P(n)".to_string(),
+            "test_problem".to_string(),
+        )
+    }
+
+    fn make_test_invariant() -> Invariant {
+        Invariant::new(
+            InvariantKind::Prefix,
+            "∀m ≤ n, P(m)".to_string(),
+            "def testInvariant (n : Nat) : Prop := ∀ m, m ≤ n → P m".to_string(),
+        )
+    }
+
+    #[test]
+    fn irc_complete_verify_internal() {
+        let ts = make_test_ts();
+        let inv = make_test_invariant();
+        let stmt_hash = hash::H(b"test_full_statement");
+
+        let base = IrcObligation::new(
+            ObligationKind::Base,
+            "I(0)".to_string(),
+            ObligationStatus::Discharged {
+                method: "Trivial".to_string(),
+                proof_hash: hash::H(b"base_proof"),
+                lean_proof: None,
+            },
+        );
+        let step = IrcObligation::new(
+            ObligationKind::Step,
+            "∀n, I(n) → I(n+1)".to_string(),
+            ObligationStatus::Discharged {
+                method: "FRC:BoundedCounterexample".to_string(),
+                proof_hash: hash::H(b"step_proof"),
+                lean_proof: None,
+            },
+        );
+        let link = IrcObligation::new(
+            ObligationKind::Link,
+            "∀n, I(n) → P(n)".to_string(),
+            ObligationStatus::Discharged {
+                method: "Trivial".to_string(),
+                proof_hash: hash::H(b"link_proof"),
+                lean_proof: None,
+            },
+        );
+
+        let irc = Irc::new(ts, inv, base, step, link, stmt_hash);
+        assert!(irc.verify_internal());
+        assert!(irc.is_complete());
+        assert_eq!(irc.obligations_discharged(), 3);
+    }
+
+    #[test]
+    fn irc_frontier_verify_internal() {
+        let ts = make_test_ts();
+        let inv = make_test_invariant();
+        let stmt_hash = hash::H(b"open_problem");
+
+        let base = IrcObligation::new(
+            ObligationKind::Base,
+            "I(0)".to_string(),
+            ObligationStatus::Discharged {
+                method: "Trivial".to_string(),
+                proof_hash: hash::H(b"base"),
+                lean_proof: None,
+            },
+        );
+        let step = IrcObligation::new(
+            ObligationKind::Step,
+            "∀n, I(n) → I(n+1)".to_string(),
+            ObligationStatus::Gap {
+                reason: "This is the open problem".to_string(),
+                attempted_methods: vec!["FRC".to_string(), "Algebraic".to_string()],
+            },
+        );
+        let link = IrcObligation::new(
+            ObligationKind::Link,
+            "∀n, I(n) → P(n)".to_string(),
+            ObligationStatus::Discharged {
+                method: "Trivial".to_string(),
+                proof_hash: hash::H(b"link"),
+                lean_proof: None,
+            },
+        );
+
+        let irc = Irc::new(ts, inv, base, step, link, stmt_hash);
+        assert!(irc.verify_internal());
+        assert!(!irc.is_complete());
+        assert_eq!(irc.obligations_discharged(), 2);
+    }
+
+    #[test]
+    fn irc_hash_deterministic() {
+        let mk = || {
+            let ts = make_test_ts();
+            let inv = make_test_invariant();
+            let base = IrcObligation::new(
+                ObligationKind::Base, "I(0)".to_string(),
+                ObligationStatus::Discharged {
+                    method: "Trivial".to_string(),
+                    proof_hash: hash::H(b"b"), lean_proof: None,
+                },
+            );
+            let step = IrcObligation::new(
+                ObligationKind::Step, "step".to_string(),
+                ObligationStatus::Gap {
+                    reason: "open".to_string(), attempted_methods: vec![],
+                },
+            );
+            let link = IrcObligation::new(
+                ObligationKind::Link, "link".to_string(),
+                ObligationStatus::Discharged {
+                    method: "Trivial".to_string(),
+                    proof_hash: hash::H(b"l"), lean_proof: None,
+                },
+            );
+            Irc::new(ts, inv, base, step, link, hash::H(b"s"))
+        };
+        assert_eq!(mk().irc_hash, mk().irc_hash);
+        assert_eq!(mk().ser_pi(), mk().ser_pi());
+    }
+
+    #[test]
+    fn irc_frontier_deterministic() {
+        let stmt = hash::H(b"test");
+        let f1 = IrcFrontier::new(stmt, vec![], None);
+        let f2 = IrcFrontier::new(stmt, vec![], None);
+        assert_eq!(f1.frontier_hash, f2.frontier_hash);
+    }
+
+    #[test]
+    fn invariant_kind_serpi_differ() {
+        assert_ne!(InvariantKind::Prefix.ser_pi(), InvariantKind::Bounding.ser_pi());
+        assert_ne!(InvariantKind::Modular.ser_pi(), InvariantKind::Structural.ser_pi());
+    }
+
+    #[test]
+    fn transition_system_deterministic() {
+        let ts1 = make_test_ts();
+        let ts2 = make_test_ts();
+        assert_eq!(ts1.ts_hash, ts2.ts_hash);
     }
 }
