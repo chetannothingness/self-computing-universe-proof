@@ -1,5 +1,6 @@
 import KernelVm.InvSyn
 import Mathlib.Tactic.PushNeg
+import Mathlib.Tactic.IntervalCases
 
 /-!
 # The Self-Justifying Evaluator
@@ -477,6 +478,24 @@ def allPrime : List Nat → Bool
   | [] => true
   | p :: ps => isPrimeNat p && allPrime ps
 
+/-- isPrimeNat k = true implies k ≥ 2. -/
+theorem isPrimeNat_ge_2 (k : Nat) (h : isPrimeNat k = true) : k ≥ 2 := by
+  match k with
+  | 0 => simp [isPrimeNat] at h
+  | 1 => simp [isPrimeNat] at h
+  | _ + 2 => omega
+
+/-- If allPrime l = true and p ∈ l, then isPrimeNat p = true. -/
+theorem allPrime_mem (l : List Nat) (p : Nat) (hmem : p ∈ l)
+    (hall : allPrime l = true) : isPrimeNat p = true := by
+  induction l with
+  | nil => exact absurd hmem (List.not_mem_nil p)
+  | cons q qs ih =>
+    simp only [allPrime, Bool.and_eq_true] at hall
+    cases hmem with
+    | head => exact hall.1
+    | tail _ htail => exact ih htail hall.2
+
 /-! ## PrimeOrFactor — Certificate-Witnessed Primality
 
   The closure that eliminates the Q² ceiling. In a closed universe,
@@ -731,15 +750,67 @@ theorem goldbachFindPair_sound (n p : Nat)
 /-- Key bridge: goldbachFindPair = some p → goldbachRepCountNat n ≥ 1.
     The count function counts ALL valid pairs. We found one. So count ≥ 1.
     This connects the witness generator to the Expr-based invariant. -/
+private theorem repcount_loop_ge_acc (n start acc fuel : Nat) :
+    goldbachRepCountNat.loop n start acc fuel ≥ acc := by
+  induction fuel generalizing start acc with
+  | zero => simp [goldbachRepCountNat.loop]
+  | succ f ih =>
+    simp only [goldbachRepCountNat.loop]
+    split
+    · -- start > n/2, returns acc
+      omega
+    · -- start ≤ n/2
+      split
+      · -- prime pair found, acc incremented
+        calc goldbachRepCountNat.loop n (start + 1) (acc + 1) f
+            ≥ acc + 1 := ih (start + 1) (acc + 1)
+          _ ≥ acc := by omega
+      · -- no pair, acc unchanged
+        exact ih (start + 1) acc
+
+private theorem repcount_loop_hits (n start acc fuel p0 : Nat)
+    (hp0 : isPrimeNat p0 && isPrimeNat (n - p0) = true)
+    (hle : start ≤ p0) (hhi : p0 ≤ n / 2) (hfuel : p0 < start + fuel) :
+    goldbachRepCountNat.loop n start acc fuel ≥ acc + 1 := by
+  induction fuel generalizing start acc with
+  | zero => omega
+  | succ f ih =>
+    simp only [goldbachRepCountNat.loop]
+    split
+    · -- start > n/2, but p0 ≤ n/2 and start ≤ p0 → contradiction
+      omega
+    · rename_i hle'
+      split
+      · -- prime pair at start, acc+1 flows through
+        exact le_trans (by omega : acc + 1 ≤ acc + 1)
+          (repcount_loop_ge_acc n (start + 1) (acc + 1) f)
+      · -- no prime pair at start
+        rename_i hfail
+        by_cases heq : start = p0
+        · -- start = p0 but check failed — contradicts hp0
+          subst heq; simp_all
+        · -- start < p0, continue
+          exact ih (start + 1) acc (by omega) (by omega)
+
 theorem findPair_implies_repcount (n p : Nat)
     (h : goldbachFindPair n = some p) :
     (goldbachRepCountNat n : Int) ≥ 1 := by
   have ⟨hp, hq, hple, hge⟩ := goldbachFindPair_sound n p h
-  -- goldbachRepCountNat loops from 2 to n/2, counting pairs.
-  -- We know p ∈ [2, n/2] with both p and n-p prime.
-  -- The loop encounters p and increments acc by 1.
-  -- Therefore the final count is ≥ 1.
-  sorry  -- STRUCTURAL: loop visits p, increments, acc only grows
+  -- isPrimeNat p = true implies p ≥ 2
+  have hp2 : p ≥ 2 := by
+    match p with
+    | 0 => simp [isPrimeNat] at hp
+    | 1 => simp [isPrimeNat] at hp
+    | _ + 2 => omega
+  -- goldbachRepCountNat n starts loop at 2 with acc=0, fuel=n/2
+  -- p ∈ [2, n/2] with both primes, so loop hits p and adds 1
+  unfold goldbachRepCountNat
+  simp only [show ¬(n < 4) from by omega, ite_false]
+  have : goldbachRepCountNat.loop n 2 0 (n / 2) ≥ 0 + 1 :=
+    repcount_loop_hits n 2 0 (n / 2) p
+      (by simp [Bool.and_eq_true]; exact ⟨hp, hq⟩)
+      hp2 hple (by omega)
+  exact_mod_cast this
 
 /-- Witness implies toProp goldbach_inv: if goldbachFindPair returns some p,
     then toProp goldbach_inv n.
@@ -750,6 +821,24 @@ theorem findPair_implies_goldbach (n p : Nat)
   have hge := (goldbachFindPair_sound n p h).2.2.2
   have hrep := findPair_implies_repcount n p h
   exact goldbach_target_is_goal n 0 (by omega) hrep
+
+/-- Goldbach is vacuously true for odd n. -/
+private theorem goldbach_inv_vacuous_odd' (n : Nat) (hodd : n % 2 ≠ 0) :
+    toProp goldbach_inv n := by
+  show evalBool (mkEnv (↑n : Int)) goldbach_inv = true
+  unfold goldbach_inv evalBool
+  simp only [eval, mkEnv, intToBool_boolToInt]
+  simp only [Bool.or_eq_true, Bool.not_eq_true']
+  left
+  simp only [Bool.and_eq_false_iff]
+  right
+  simp only [beq_eq_false_iff_ne, ne_eq]
+  exact_mod_cast hodd
+
+/-- Goldbach is vacuously true for n < 4. -/
+private theorem goldbach_inv_vacuous_small' (n : Nat) (hsmall : n < 4) :
+    toProp goldbach_inv n := by
+  interval_cases n <;> native_decide
 
 /-- The goldbach witness check: for all n in [0, bound],
     either n is odd/small (vacuous) or goldbachFindPair finds a pair.
@@ -766,18 +855,83 @@ def checkGoldbachComplete (bound : Nat) : Bool :=
         | none => false
   loop 0 (bound + 1)
 
+/-- Completeness: if toProp inv n for all n ≤ bound, then replayAll inv bound = true. -/
+theorem replayAll_complete (inv : Expr) (bound : Nat)
+    (h : ∀ n, n ≤ bound → toProp inv n) :
+    replayAll inv bound = true := by
+  suffices ∀ start fuel, start + fuel ≥ bound + 1 →
+      replayAll.loop inv bound start fuel = true by
+    exact this 0 (bound + 1) (by omega)
+  intro start fuel
+  induction fuel generalizing start with
+  | zero =>
+    intro hge
+    simp only [replayAll.loop]
+  | succ fuel' ih =>
+    intro hge
+    simp only [replayAll.loop]
+    split
+    · -- start > bound → true
+      rfl
+    · rename_i hle
+      simp only [Nat.not_lt] at hle
+      have htoProp := h start hle
+      unfold toProp at htoProp
+      rw [htoProp]
+      exact ih (start + 1) (by omega)
+
+/-- Bounded Goldbach: checkGoldbachComplete passes → witness exists for each even n ≤ N₀. -/
+theorem goldbach_bounded_complete (N₀ : Nat)
+    (hcheck : checkGoldbachComplete N₀ = true) :
+    ∀ n, n ≤ N₀ → n ≥ 4 → n % 2 = 0 → goldbachFindPair n ≠ none := by
+  intro n hn hge heven
+  suffices ∀ start fuel, start ≤ n → n ≤ N₀ → n ≥ 4 → n % 2 = 0 →
+      n < start + fuel →
+      checkGoldbachComplete.loop N₀ start fuel = true →
+      goldbachFindPair n ≠ none by
+    exact this 0 (N₀ + 1) (by omega) hn hge heven (by omega) hcheck
+  intro start fuel
+  induction fuel generalizing start with
+  | zero => intro _ _ _ _ hlt _; omega
+  | succ fuel' ih =>
+    intro hle hbn hge' hev hlt hloop
+    simp only [checkGoldbachComplete.loop] at hloop
+    split at hloop
+    · omega
+    · rename_i hgt
+      simp only [Nat.not_lt] at hgt
+      split at hloop
+      · by_cases heq : n = start
+        · subst heq
+          rename_i hskip
+          -- hskip : (n < 4 || n % 2 != 0) = true, but n ≥ 4 and n % 2 = 0
+          simp only [Bool.or_eq_true, decide_eq_true_eq, bne_iff_ne, ne_eq] at hskip
+          omega
+        · exact ih (start + 1) (by omega) hbn hge' hev (by omega) hloop
+      · rename_i hnotSkip
+        split at hloop
+        · by_cases heq : n = start
+          · subst heq; rename_i p hw; simp [hw]
+          · exact ih (start + 1) (by omega) hbn hge' hev (by omega) hloop
+        · simp at hloop
+
 /-- checkGoldbachComplete implies replayAll goldbach_inv:
     if the witness check passes, then the invariant holds for all n ≤ bound.
     The witness IS the proof. The computation IS the certificate. -/
 theorem checkGoldbachComplete_implies_replay (bound : Nat)
     (h : checkGoldbachComplete bound = true) :
     replayAll goldbach_inv bound = true := by
-  -- checkGoldbachComplete finds actual prime pairs for each even n ≥ 4.
-  -- replayAll evaluates the invariant expression, which checks
-  -- goldbachRepCountNat ≥ 1 for even n ≥ 4.
-  -- Both computations use the same isPrimeNat.
-  -- If findPair succeeds for all n, then repcount ≥ 1, then invariant holds.
-  sorry  -- STRUCTURAL: findPair success ↔ invariant holds
+  apply replayAll_complete
+  intro n hn
+  by_cases hge : n ≥ 4
+  · by_cases heven : n % 2 = 0
+    · -- Even n ≥ 4: checkGoldbachComplete guarantees findPair succeeds
+      have hne := goldbach_bounded_complete bound h n hn hge heven
+      match hgen : goldbachFindPair n with
+      | some p => exact findPair_implies_goldbach n p hgen
+      | none => exact absurd hgen hne
+    · exact goldbach_inv_vacuous_odd' n heven
+  · exact goldbach_inv_vacuous_small' n (by omega)
 
 /-! ## The Complete Goldbach Proof — goldbach_via_witness
 
@@ -809,18 +963,27 @@ theorem checkGoldbachComplete_implies_replay (bound : Nat)
     The eval of goldbach_inv at odd n = implies(false_antecedent, _) = 1. -/
 theorem goldbach_inv_vacuous_odd (n : Nat) (hodd : n % 2 ≠ 0) :
     toProp goldbach_inv n := by
-  unfold goldbach_inv; rw [toProp_implies_iff]; intro hant
-  -- antecedent contains eq(n%2, 0) which is false for odd n
-  -- This is eval-level: andE(_, eq(mod(n,2), 0)) evaluates to false
-  sorry -- EVAL: odd n makes eq(mod(n,2),0) evaluate to 0, andE to 0
+  -- toProp = evalBool ... = true. For implies: !antecedent || consequent.
+  -- For odd n: antecedent contains eq(n%2,0) which is false, so !false || _ = true.
+  show evalBool (mkEnv (↑n : Int)) goldbach_inv = true
+  unfold goldbach_inv evalBool
+  simp only [eval, mkEnv, intToBool_boolToInt]
+  -- Goal: !(decide(4 ≤ ↑n) && ((↑n % 2) == 0)) || consequent = true
+  simp only [Bool.or_eq_true, Bool.not_eq_true']
+  left
+  simp only [Bool.and_eq_false_iff]
+  right
+  -- Goal: ((↑n : Int) % 2 == 0) = false  (BEq)
+  simp only [beq_eq_false_iff_ne, ne_eq]
+  exact_mod_cast hodd
 
 /-- Goldbach is vacuously true for n < 4: antecedent requires n ≥ 4.
     Implication with false antecedent is true. EVAL-LEVEL FACT. -/
 theorem goldbach_inv_vacuous_small (n : Nat) (hsmall : n < 4) :
     toProp goldbach_inv n := by
-  unfold goldbach_inv; rw [toProp_implies_iff]; intro hant
-  -- antecedent contains le(4, n) which is false for n < 4
-  sorry -- EVAL: n < 4 makes le(4, n) evaluate to 0, andE to 0
+  -- n ∈ {0, 1, 2, 3}. For each, toProp goldbach_inv n is decidable.
+  -- The antecedent le(4, n) is false for all n < 4, making the implication true.
+  interval_cases n <;> native_decide
 
 /-- THE COMPLETE GOLDBACH THEOREM via schema witness generator.
 
@@ -951,13 +1114,6 @@ structure CRTCert where
    This is why CRTCert is INSUFFICIENT for unbounded Goldbach.
    The DensityLeaf (below) is the missing closure. -/
 
-/-- Bounded Goldbach: checkGoldbachComplete passes → witness exists for each even n ≤ N₀. -/
-theorem goldbach_bounded_complete (N₀ : Nat)
-    (hcheck : checkGoldbachComplete N₀ = true) :
-    ∀ n, n ≤ N₀ → n ≥ 4 → n % 2 = 0 → goldbachFindPair n ≠ none := by
-  intro n hn hge heven
-  sorry  -- MECHANICAL: loop invariant of checkGoldbachComplete
-
 /-! ## goldbach_forall — framework theorem (0 sorry)
 
   Takes a density hypothesis as input. The hypothesis IS the content.
@@ -1060,14 +1216,65 @@ def checkDensityShifts (leaf : DensityLeaf) : Bool :=
     isPrimeNat check to be meaningful).
     goldbachFindPair tries all primes from 2 to n/2.
     It will encounter p (or an earlier valid pair) and return some. -/
+private theorem findPair_loop_ne_none (n start fuel p0 : Nat)
+    (hp0 : isPrimeNat p0 && isPrimeNat (n - p0) = true)
+    (hle : start ≤ p0) (hhi : p0 ≤ n / 2) (hfuel : p0 < start + fuel) :
+    goldbachFindPair.loop n start fuel ≠ none := by
+  induction fuel generalizing start with
+  | zero => omega
+  | succ f ih =>
+    simp only [goldbachFindPair.loop]
+    split
+    · -- start > n/2, but p0 ≤ n/2 and start ≤ p0 → contradiction
+      omega
+    · split
+      · -- found a pair at start → returns some
+        simp
+      · -- no pair at start
+        rename_i hfail
+        by_cases heq : start = p0
+        · subst heq; simp_all
+        · exact ih (start + 1) (by omega) (by omega)
+
 theorem densityLeaf_implies_findPair (leaf : DensityLeaf)
     (n : Nat) (hn : n ≥ leaf.N₀) (hge : n ≥ 4) (heven : n % 2 = 0) :
     goldbachFindPair n ≠ none := by
   obtain ⟨p, hp_mem, hp_prime⟩ := leaf.density_holds n hn hge heven
   -- p ∈ shifts and isPrimeNat(n-p) = true
   -- shifts_prime gives isPrimeNat p = true
-  -- goldbachFindPair tries all primes; it will find this pair (or earlier)
-  sorry  -- MECHANICAL: findPair searches [2, n/2], must encounter the valid p
+  have hp_is_prime := allPrime_mem leaf.shifts p hp_mem leaf.shifts_prime
+  have hp0 : isPrimeNat p && isPrimeNat (n - p) = true := by
+    simp [Bool.and_eq_true]; exact ⟨hp_is_prime, hp_prime⟩
+  -- p ≥ 2 since isPrimeNat p = true
+  have hp2 : p ≥ 2 := isPrimeNat_ge_2 p hp_is_prime
+  -- n - p ≥ 2 since isPrimeNat (n - p) = true
+  have hnp2 : n - p ≥ 2 := isPrimeNat_ge_2 (n - p) hp_prime
+  -- p + 2 ≤ n from n - p ≥ 2
+  have hpn : p + 2 ≤ n := by
+    by_contra h; push_neg at h
+    have : n - p = 0 ∨ n - p = 1 := by omega
+    omega
+  -- Use p0 = min(p, n-p) as the witness for the loop (which searches 2..n/2)
+  -- If p ≤ n/2, use p directly. Otherwise use n-p (which is ≤ n/2).
+  -- In either case, isPrimeNat p0 && isPrimeNat (n - p0) = true.
+  by_cases hle2 : p ≤ n / 2
+  · unfold goldbachFindPair
+    simp only [show ¬(n < 4) from by omega, ite_false]
+    exact findPair_loop_ne_none n 2 (n / 2) p hp0 hp2 hle2 (by omega)
+  · push_neg at hle2
+    -- p > n/2, so use q = n - p as witness: q ≤ n/2 and q ≥ 2
+    let q := n - p
+    have hq_prime : isPrimeNat q = true := hp_prime
+    have hq2 : q ≥ 2 := hnp2
+    have hqle : q ≤ n / 2 := by omega
+    -- n - q = n - (n - p) = p (since p ≤ n)
+    have hplen : p ≤ n := by omega
+    have hnq : n - q = p := by omega
+    have hq0 : isPrimeNat q && isPrimeNat (n - q) = true := by
+      simp [Bool.and_eq_true, hq_prime, hnq, hp_is_prime]
+    unfold goldbachFindPair
+    simp only [show ¬(n < 4) from by omega, ite_false]
+    exact findPair_loop_ne_none n 2 (n / 2) q hq0 hq2 hqle (by omega)
 
 /-- THE COMPLETE GOLDBACH THEOREM via DensityLeaf.
     The structure is:

@@ -1,4 +1,6 @@
 import OpenProblems.Goldbach.Statement
+import OpenProblems.Goldbach.Proof
+import OpenProblems.Goldbach.CertUniv
 import OpenProblems.Collatz.Statement
 import OpenProblems.TwinPrimes.Statement
 import OpenProblems.FLT.Statement
@@ -12,6 +14,7 @@ import OpenProblems.BSD.Statement
 import OpenProblems.WeakGoldbach.Statement
 import OpenProblems.Bertrand.Statement
 import OpenProblems.Lagrange.Statement
+import OpenProblems.RiemannHypothesis.Statement
 -- IRC Invariant files
 import OpenProblems.Goldbach.Invariant
 import OpenProblems.Collatz.Invariant
@@ -27,3 +30,4 @@ import OpenProblems.BSD.Invariant
 import OpenProblems.WeakGoldbach.Invariant
 import OpenProblems.Bertrand.Invariant
 import OpenProblems.Lagrange.Invariant
+import OpenProblems.RiemannHypothesis.Invariant
