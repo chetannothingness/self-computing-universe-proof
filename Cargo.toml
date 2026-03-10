@@ -16,6 +16,7 @@ members = [
     "kernel-lean",
     "kernel-cli",
     "agi-proof",
+    "experiments/subset-sum",
 ]
 
 [workspace.dependencies]

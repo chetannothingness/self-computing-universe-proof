@@ -1,0 +1,10 @@
+[package]
+name = "subset-sum"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kernel-frc = { path = "../../kernel-frc" }
+kernel-types = { path = "../../kernel-types" }
+clap = { version = "4", features = ["derive"] }
+rand = "0.8"
